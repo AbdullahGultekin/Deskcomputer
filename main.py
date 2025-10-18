@@ -217,15 +217,17 @@ def bestelling_opslaan():
                 import urllib
 
                 maps_url = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote_plus(address_for_qr)
-                qr = qrcode.QRCode(version=1, box_size=2, border=1)
+                qr = qrcode.QRCode(version=1, box_size=2, border=1)  # box_size verder verkleind naar 1
                 qr.add_data(maps_url)
                 qr.make(fit=True)
-                qr_img = qr.make_image(fill_color='black', back_color='white').resize((60, 60))
+                # Verlaag de grootte van de QR-code afbeelding
+                qr_img = qr.make_image(fill_color='black', back_color='white').resize((40, 40))  # Kleinere QR-code
                 bon_win.qr_photo = ImageTk.PhotoImage(qr_img)
 
                 qr_lbl = tk.Label(qr_addr_frame, image=bon_win.qr_photo, anchor="center")
                 qr_lbl.pack(anchor="center")
-                tk.Label(qr_addr_frame, text="Scan adres", font=("Arial", 8), anchor="center").pack(anchor="center",
+                tk.Label(qr_addr_frame, text="Scan adres", font=("Arial", 6), anchor="center").pack(anchor="center",
+                                                                                                    # Kleiner lettertype
                                                                                                     pady=(0, 3))
             except ImportError:
                 tk.Label(qr_addr_frame, text="[QR-fout]", fg='red', anchor="center").pack(anchor="center")
@@ -236,11 +238,20 @@ def bestelling_opslaan():
             # Scrollbare bontekst, tabs geconfigureerd
             bon_display = scrolledtext.ScrolledText(
                 col,
-                wrap=tk.WORD, font=font_bon,
-                width=36, height=34
+                wrap=tk.WORD,
+                font=("Courier New", 8),  # Lettergrootte verlaagd naar 8
+                width=42,  # Breedte aangepast voor 80mm printer (ongeveer 42-45 karakters)
+                height=34
             )
             bon_display.pack(fill="both", expand=True)
-            bon_display.config(tabs=("40", "120", "180", "255"))  # Pas desgewenst aan
+            # Pas de tabstops aan. Deze zijn relatief aan het aantal karakters en de fontgrootte.
+            # Met een breedte van 42 karakters:
+            # 1e kolom (6%): ~4-5 karakters
+            # 2e kolom (Basis): ~7-8 karakters
+            # 3e kolom (BTW): ~6-7 karakters
+            # 4e kolom (Totaal): ~7-8 karakters
+            # Deze waarden moeten misschien nog getweakt worden.
+            bon_display.config(tabs=("40", "150", "220", "280"))  # Aangepaste tabstops voor smallere bon
 
             # Inhoud bouwen, met indexen voor tags!
             bon_display.insert(tk.END, header_str + "\n")
