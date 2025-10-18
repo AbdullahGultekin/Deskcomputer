@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, Toplevel, scrolledtext, ttk
+from tkinter import messagebox, Toplevel, scrolledtext, ttk, simpledialog
 import json
 import random
 import datetime
@@ -20,6 +20,10 @@ from modules.voorraad import open_voorraad
 
 EXTRAS = {}
 menu_data = {}
+app_settings = {}
+
+# Pad naar instellingenbestand
+SETTINGS_FILE = "settings.json"
 
 
 def load_json_file(path, fallback_data=None):
@@ -37,6 +41,16 @@ def load_json_file(path, fallback_data=None):
     except json.JSONDecodeError:
         messagebox.showerror("Fout", f"{path} is geen geldige JSON!")
         return {}
+
+
+def save_json_file(path, data):
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        messagebox.showerror("Fout", f"Kon {path} niet opslaan: {e}")
+        return False
 
 
 def load_data():
@@ -59,6 +73,13 @@ def load_data():
         messagebox.showerror("Fout", "menu.json is geen geldige JSON!")
         menu_data = {}
 
+    # Laad applicatie-instellingen
+    global app_settings
+    settings_fallback = {
+        "thermal_printer_name": "Default"  # Standaard naar 'Default'
+    }
+    app_settings = load_json_file(SETTINGS_FILE, fallback_data=settings_fallback)
+
 
 # Roep dit vroeg aan (voor open_menu)
 load_data()
@@ -74,6 +95,29 @@ postcodes = [
 ]
 
 bestelregels = []
+
+
+# Functie om printerinstellingen te openen
+def open_printer_settings():
+    settings_win = tk.Toplevel(root)
+    settings_win.title("Printer Instellingen")
+    settings_win.geometry("400x150")
+    settings_win.transient(root)
+    settings_win.grab_set()
+
+    tk.Label(settings_win, text="Naam thermische printer (of 'Default'):", font=("Arial", 11, "bold")).pack(pady=10)
+
+    printer_name_var = tk.StringVar(value=app_settings.get("thermal_printer_name", "Default"))
+    printer_entry = tk.Entry(settings_win, textvariable=printer_name_var, width=40, font=("Arial", 11))
+    printer_entry.pack(pady=5)
+
+    def save_settings():
+        app_settings["thermal_printer_name"] = printer_name_var.get().strip()
+        if save_json_file(SETTINGS_FILE, app_settings):
+            messagebox.showinfo("Opgeslagen", "Printerinstellingen succesvol opgeslagen!")
+            settings_win.destroy()
+
+    tk.Button(settings_win, text="Opslaan", command=save_settings, bg="#D1FFD1", font=("Arial", 10)).pack(pady=10)
 
 
 def bestelling_opslaan():
@@ -231,20 +275,51 @@ def bestelling_opslaan():
             def print_bon():
                 try:
                     import tempfile, subprocess, sys
+                    # Maak een tijdelijk bestand aan om de bontekst in op te slaan
                     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
                     tmp.write("\n".join(
                         [header_str, info_str, address_str, details_str, total_header, total_row, te_betalen_str,
                          totaal_bedrag_str, footer_str]))
-                    tmp.close()
-                    if os.name == "nt":
-                        # Windows: standaardprinter
-                        os.startfile(tmp.name, "print")
-                    else:
-                        # macOS/Linux met lpr
-                        subprocess.run(["lpr", tmp.name], check=False)
+                    tmp.close()  # Sluit het bestand zodat andere programma's het kunnen lezen
+
+                    printer_name = app_settings.get("thermal_printer_name", "Default")
+
+                    if os.name == "nt":  # Controleer of het besturingssysteem Windows is
+                        if printer_name and printer_name.lower() != "default":
+                            # Op Windows is direct printen naar een specifieke NIET-standaard printer zonder
+                            # externe modules (zoals pywin32) complex.
+                            # notepad.exe /p print altijd naar de standaardprinter.
+                            # os.startfile(tmp.name, "print") print ook naar de standaardprinter.
+                            # Voor een specifieke printer op Windows zou je pywin32 nodig hebben:
+                            # import win32print
+                            # handle = win32print.OpenPrinter(printer_name)
+                            # ... (complexer dan hier passend is) ...
+                            messagebox.showwarning("Print",
+                                                   f"Op Windows print de app momenteel alleen naar de standaardprinter. "
+                                                   f"De ingestelde printer '{printer_name}' kan niet direct gekozen worden zonder extra setup. "
+                                                   f"Bon wordt naar standaardprinter gestuurd via Notepad.")
+                            subprocess.run(["notepad.exe", "/p", tmp.name], check=False)
+                        else:
+                            # Standaard gedrag: stuur naar standaardprinter via Notepad
+                            subprocess.run(["notepad.exe", "/p", tmp.name], check=False)
+                    else:  # macOS of Linux
+                        if printer_name and printer_name.lower() != "default":
+                            # Gebruik lpr met de opgegeven printernaam
+                            subprocess.run(["lpr", "-P", printer_name, tmp.name], check=False)
+                        else:
+                            # Gebruik lpr met de standaardprinter
+                            subprocess.run(["lpr", tmp.name], check=False)
+
                     messagebox.showinfo("Print", "Bon naar printer gestuurd.")
+
+                except FileNotFoundError:
+                    messagebox.showerror("Fout", "Printerprogramma (notepad.exe of lpr) niet gevonden.")
                 except Exception as e:
                     messagebox.showerror("Print", f"Printen mislukt: {e}")
+                finally:
+                    # Verwijder het tijdelijke bestand na het afdrukken (of na de fout)
+                    if tmp and os.path.exists(tmp.name):
+                        os.unlink(tmp.name)
 
             tk.Button(col, text="Print bon", command=print_bon, bg="#E1E1FF").pack(pady=(6, 2))
 
@@ -972,6 +1047,8 @@ tk.Button(knoppen_frame, text="Backup/Restore", command=lambda: open_backup_tool
           font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
 tk.Button(knoppen_frame, text="Voorraad", command=lambda: open_voorraad(root), bg="#FFF3CD",
           font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Printer Instellingen", command=open_printer_settings, bg="#E1E1FF",
+          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))  # Nieuwe knop
 
 # MAIN LOOP starten
 root.mainloop()
