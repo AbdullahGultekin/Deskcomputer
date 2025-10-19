@@ -1,6 +1,4 @@
 import datetime
-import json
-import urllib.parse
 from decimal import Decimal, ROUND_HALF_UP
 
 
@@ -13,185 +11,210 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     # Bereken de totaalprijs correct aan het begin
     totaal = sum(Decimal(str(item['prijs'])) * item['aantal'] for item in bestelregels)
 
-    # --- Header ---
-    # Condenseer de header om minder regels in te nemen
-    header_content = [
-        "PITA PIZZA NAPOLI",
-        "Brugstraat 12 - 9120 Vrasene",
-        "TEL: 03/775 72 28",
-        "BTW: BE 0479.048.950",
-        "",  # Extra witregel
-        "www.pitapizzanapoli.be"
+    # --- 1. HEADER ---
+    header_lines = [
+        "PITA PIZZA NAPOLI".center(BON_WIDTH),
+        "Brugstraat 12 - 9120 Vrasene".center(BON_WIDTH),
+        "TEL: 03/775 72 28".center(BON_WIDTH),
+        "BTW: BE 0479.048.950".center(BON_WIDTH),
+        "www.pitapizzanapoli.be".center(BON_WIDTH)
     ]
-    header_lines = [line.center(BON_WIDTH) for line in header_content]
+    header_str = "\n".join(header_lines)
 
-    # --- Bestelinfo (rechts uitgelijnd) ---
+    # --- 2. BESTELINFO ---
     nu = datetime.datetime.now()
     bezorgtijd = (nu + datetime.timedelta(minutes=45)).strftime('%H:%M')
-    # Verkort labels
-    info_content = {
-        "Type:": "Tel",
-        "Bon nr:": bonnummer,
-        "Datum:": nu.strftime('%d-%m-%Y'),
-        "Tijd:": nu.strftime('%H:%M'),
-        "Betaling:": "Cash",
-        "Bezorging:": bezorgtijd
-    }
-    info_lines = [""]
-    for label, value in info_content.items():
-        info_lines.append(f"{label:<15}{str(value):>{BON_WIDTH - 15}}")
-    info_lines.append("")
+    info_lines = [
+        "",
+        f"{'Type:':<15}{'Tel':>{BON_WIDTH - 15}}",
+        f"{'Bon nr:':<15}{bonnummer:>{BON_WIDTH - 15}}",
+        f"{'Datum:':<15}{nu.strftime('%d-%m-%Y'):>{BON_WIDTH - 15}}",
+        f"{'Tijd:':<15}{nu.strftime('%H:%M'):>{BON_WIDTH - 15}}",
+        f"{'Betaling:':<15}{'Cash':>{BON_WIDTH - 15}}",
+        f"{'Bezorging:':<15}{bezorgtijd:>{BON_WIDTH - 15}}",
+        ""
+    ]
+    info_str = "\n".join(info_lines)
 
-    # --- Adres & QR Code prep ---
-    postcode_gemeente = klant["postcode_gemeente"].split()
-    postcode = postcode_gemeente[0] if len(postcode_gemeente) > 0 else ""
-    gemeente = ' '.join(postcode_gemeente[1:]) if len(postcode_gemeente) > 1 else ""
+    # --- 3. ADRES ---
     address_lines = [
         "Leveradres:",
         f"{klant['adres']} {klant['nr']}",
-        f"{postcode} {gemeente}",
+        f"{klant['postcode_gemeente']}",
         f"{klant['telefoon']}"
     ]
-    full_address_for_qr = f"{klant['adres']} {klant['nr']}, {postcode} {gemeente}, Belgium"
+    if klant.get("naam"):
+        address_lines.append(klant["naam"])  # Klantnaam toevoegen als deze bestaat
+    address_str = "\n".join(address_lines)
 
-    # --- Details Bestelling ---
-    details_lines = ["Details bestelling".center(BON_WIDTH), ("-" * BON_WIDTH)]
+    # --- 4. QR Adres string (voor QR-generatie) ---
+    address_for_qr = f"{klant['adres']} {klant['nr']}, {klant['postcode_gemeente']}, Belgium"
+
+    # --- 5. DETAILS BESTELLING (inclusief extra's en opmerkingen) ---
+    details_output_lines = []  # Lijst om alle details-regels te verzamelen
+    details_output_lines.append("Details bestelling".center(BON_WIDTH))
+    details_output_lines.append("-" * BON_WIDTH)
 
     for item in bestelregels:
         aantal = item['aantal']
-        # base_price wordt nu niet direct op de bonregel getoond, alleen de totale prijs van het product
-        product_totaal_prijs = Decimal(str(item['prijs'])) * aantal
+        product_prijs_per_stuk = Decimal(str(item['prijs']))
+        product_totaal_prijs = product_prijs_per_stuk * aantal
 
-        display_product_name = item['product']
+        original_product_name = item['product']
+        current_display_name = original_product_name  # Start met de originele naam, pas aan indien nodig
+
         cat_lower = item['categorie'].lower()
 
-        # Vereenvoudig pizzanamen naar alleen het nummer
-        if 'pizza' in cat_lower and display_product_name and '.' in display_product_name:
-            try:
-                # Extra check om te zorgen dat het nummer echt een nummer is en geen deel van de naam
-                nummer_str = display_product_name.split('.')[0].strip()
+        # Afkortingen voor categorieën die het "ABBR (Naam)" formaat gebruiken
+        category_abbreviations_with_name_part = {
+            "schotels": "SCH",
+            "grote-broodjes": "GR",
+            "klein-broodjes": "KL",
+            "turks-brood": "T",
+            "durum": "D",
+            "kapsalons": "KAP",  # Toegevoegd voor consistentie met eerdere codeblokken
+            "pasta's": "PAS",  # Toegevoegd voor consistentie met eerdere codeblokken
+        }
+
+        # Afkortingen voor pizza categorieën die het "ABBR Nummer" formaat gebruiken
+        pizza_category_abbreviations = {
+            "small pizza's": "S",
+            "medium pizza's": "M",
+            "large pizza's": "L",
+        }
+
+        # Pas formaat toe voor categorieën die moeten worden weergegeven als "ABBR (Product Naam Deel)"
+        if cat_lower in category_abbreviations_with_name_part:
+            prefix = category_abbreviations_with_name_part[cat_lower]
+            if original_product_name and '.' in original_product_name and original_product_name.split('.')[
+                0].strip().isdigit():
+                # Haal het naamgedeelte na het nummer op (bijv. "101. Natuur" -> "Natuur")
+                product_name_part = " ".join(original_product_name.split(".")[1:]).strip()
+                current_display_name = f"{prefix} ({product_name_part})"
+            else:
+                # Als niet genummerd, gebruik de originele productnaam met prefix (bijv. "SCH (Natuur)")
+                current_display_name = f"{prefix} ({original_product_name})"
+
+        # Pas formaat toe voor pizza categorieën die moeten worden weergegeven als "ABBR ProductNummer"
+        elif cat_lower in pizza_category_abbreviations:
+            prefix = pizza_category_abbreviations[cat_lower]
+            if original_product_name and '.' in original_product_name:
+                nummer_str = original_product_name.split('.')[0].strip()
                 if nummer_str.isdigit():
-                    display_product_name = nummer_str
+                    current_display_name = f"{prefix} {nummer_str}"
                 else:
-                    display_product_name = " ".join(display_product_name.split(".")[1:]).strip()
-            except:
-                pass  # Blijf bij originele naam als parsen mislukt
+                    # Terugval als pizzanaam geen nummer heeft maar wel in een pizzacategorie zit
+                    current_display_name = f"{prefix} {original_product_name}"  # Bijv. "S Margherita"
+            else:
+                # Terugval als pizzanaam geen nummer of punt heeft
+                current_display_name = f"{prefix} {original_product_name}"  # Bijv. "S Margherita"
 
-        # Vereenvoudig weergave van schotels, broodjes, durums, turks-brood
-        elif cat_lower in ["schotels", "grote-broodjes", "klein-broodjes", "turks-brood", "durum", "kapsalons",
-                           "pasta's"]:
-            # Indien productnaam een nummer-prefix heeft, verwijder die (bv. "1. Margherita")
-            if display_product_name and '.' in display_product_name:
-                try:
-                    # Extra check om te zorgen dat het nummer echt een nummer is en geen deel van de naam
-                    nummer_str = display_product_name.split('.')[0].strip()
-                    if nummer_str.isdigit():
-                        display_product_name = " ".join(display_product_name.split(".")[1:]).strip()
-                    else:
-                        pass  # Blijf bij originele naam
-                except:
-                    pass  # Blijf bij originele naam
+        # Voor alle andere categorieën blijft current_display_name de original_product_name.
+        display_product_name = current_display_name
 
-        # Hoofdlijn product: Aantal x Naam Product (Prijs)
+        # Hoofdregel van het product op de bon
         main_line_text = f"{aantal}x {display_product_name}"
         main_line_price = f"€ {product_totaal_prijs:.2f}"
-        # Aangepaste padding voor smallere bon
-        details_lines.append(f"{main_line_text:<{BON_WIDTH - 9}}{main_line_price:>{8}}")
+        details_output_lines.append(f"{main_line_text:<{BON_WIDTH - 9}}{main_line_price:>{8}}")
 
-        # Extras onder product, elke extra op nieuwe regel met '>' prefix
+        # LOGICA VOOR HALF-HALF PIZZA'S (specifiek hier behandeld voor de bon weergave)
+        if 'half_half' in item.get('extras', {}) and isinstance(item['extras']['half_half'], list) and len(
+                item['extras']['half_half']) == 2:
+            pizza1_full = item['extras']['half_half'][0]
+            pizza2_full = item['extras']['half_half'][1]
+
+            # Haal de nummers op voor weergave van Half-Half (bijv. "6. Salame" -> "6")
+            pizza1_display = pizza1_full.split('.')[0].strip() if '.' in pizza1_full and pizza1_full.split('.')[
+                0].strip().isdigit() else pizza1_full
+            pizza2_display = pizza2_full.split('.')[0].strip() if '.' in pizza2_full and pizza2_full.split('.')[
+                0].strip().isdigit() else pizza2_full
+
+            details_output_lines.append(f"> {pizza1_display}")
+            details_output_lines.append(f"> {pizza2_display}")
+
+        # LOGICA VOOR EXTRAS WEERGAVE MET '>' (deze sectie begint hier)
         if item.get('extras'):
             extras = item['extras']
-            garnering_prices = extras_data.get(cat_lower, {}).get('garnering', {}) if extras_data else {}
+            garnering_prijzen_per_cat = extras_data.get(cat_lower, {}).get('garnering', {}) if extras_data else {}
 
-            # Functie om extra's netjes uit te lijnen onder elkaar
-            def add_extra_display_line(extra_label, extra_value, is_garnering=False):
+            def add_extra_display_line(extra_value, is_garnering=False):
                 if isinstance(extra_value, list):
                     for val in extra_value:
-                        add_extra_display_line(extra_label, val, is_garnering)
+                        add_extra_display_line(val, is_garnering)
                 elif extra_value:
-                    display_text = f"> {extra_value}"
-                    extra_price_str = ""
+                    line_prefix = "> "
+                    extra_line_text = str(extra_value)  # Zorg dat het een string is
+                    extra_line_price_str = ""
+
                     if is_garnering:
-                        price = Decimal(str(garnering_prices.get(extra_value, 0)))
-                        if price > 0:
-                            extra_price_str = f"€ {price * aantal:.2f}"  # Prijs per eenheid * aantal van product
+                        garnering_basis_prijs = Decimal(str(garnering_prijzen_per_cat.get(extra_line_text, 0)))
+                        if garnering_basis_prijs > 0:
+                            extra_line_price_str = f"€ {garnering_basis_prijs * aantal:.2f}"
 
-                    # Zorg dat de display_text niet langer is dan BON_WIDTH-2 om ruimte voor '>' te houden
-                    if len(display_text) > BON_WIDTH - 2 - len(extra_price_str.strip()):
-                        display_text = display_text[:BON_WIDTH - 2 - len(
-                            extra_price_str.strip()) - 3] + "..."  # afkorten indien te lang
+                    max_text_width = BON_WIDTH - len(line_prefix) - len(extra_line_price_str) - 1
+                    if len(extra_line_text) > max_text_width:
+                        extra_line_text = extra_line_text[:max_text_width - 3] + "..."
 
-                    details_lines.append(
-                        f"{display_text:<{BON_WIDTH - len(extra_price_str)}}{extra_price_str:>{len(extra_price_str)}}")
+                    full_line_output = f"{line_prefix}{extra_line_text}"
+                    details_output_lines.append(
+                        f"{full_line_output:<{BON_WIDTH - len(extra_line_price_str)}}{extra_line_price_str:>{len(extra_line_price_str)}}")
 
-            # HALF-HALF PIZZA's
-            if 'half_half' in extras and isinstance(extras['half_half'], list) and len(extras['half_half']) == 2:
-                # Voor half-half pizza, toon de nummers (of namen als geen nummer)
-                pizza1 = extras['half_half'][0]
-                pizza2 = extras['half_half'][1]
-                # Als het nummers zijn (bv. "1"), toon dan alleen het nummer
-                if pizza1.split('.')[0].strip().isdigit(): pizza1 = pizza1.split('.')[0].strip()
-                if pizza2.split('.')[0].strip().isdigit(): pizza2 = pizza2.split('.')[0].strip()
+            # Algemene extra's (vlees, bijgerecht, sauzen, garnering)
+            for extra_type in ['vlees', 'bijgerecht']:
+                if extra_type in extras and extras[extra_type]:
+                    add_extra_display_line(extras[extra_type])
 
-                details_lines.append(f"> Half: {pizza1} & {pizza2}")
-
-            # VLEES
-            if 'vlees' in extras and extras['vlees']:
-                add_extra_display_line("Vlees", extras['vlees'])
-
-            # BIJGERECHT
-            if 'bijgerecht' in extras and extras['bijgerecht']:
-                add_extra_display_line("Bijgerecht", extras['bijgerecht'])
-
-            # SAUZEN (check voor 'saus' en 'sauzen')
             saus_key = 'sauzen' if 'sauzen' in extras else 'saus'
             if saus_key in extras and extras[saus_key]:
-                add_extra_display_line("Saus", extras[saus_key])
+                add_extra_display_line(extras[saus_key])
 
-            # GARNERING
             if 'garnering' in extras and extras['garnering']:
-                add_extra_display_line("Garnering", extras['garnering'], is_garnering=True)
+                add_extra_display_line(extras['garnering'], is_garnering=True)
 
-        # OPMERKING
+        # OPMERKINGEN
         if item.get('opmerking'):
             opm = item['opmerking']
-            # Als opmerking te lang is, snijd af met '...'
-            if len(opm) > BON_WIDTH - 5:  # -5 om ruimte te laten voor "> Opm: "
-                opm = opm[:BON_WIDTH - 8] + "..."
-            details_lines.append(f"> Opm: {opm}")
+            opm_prefix = "> Opm: "
+            max_opm_width = BON_WIDTH - len(opm_prefix)
+            if len(opm) > max_opm_width:
+                opm = opm[:max_opm_width - 3] + "..."
+            details_output_lines.append(f"{opm_prefix}{opm}")
 
-    details_lines.append("-" * BON_WIDTH)
+    details_str = "\n".join(details_output_lines)  # Bouw de details_str hier
 
-    # --- Totaal ---
+    # --- 6. PRIJSTABEL (headers en waardes) ---
     basis = (totaal / Decimal('1.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     btw = totaal - basis
-    total_lines = [
-        "",
-        "Tarief\tBasis\tBTW\tTotaal",
-        f"6%\t€ {basis:.2f}\t€ {btw:.2f}\t€ {totaal:.2f}",
-        ""
-    ]
 
-    # --- Te Betalen ---
+    # Gebruik f-strings met vaste breedtes voor nette uitlijning
+    # Totaal BON_WIDTH = 42 karakters
+    # Kolombreedtes: Tarief (6), Basis (11), BTW (11), Totaal (14) = 42
+    total_header = f"{'Tarief':<6}{'Basis':>11}{'BTW':>11}{'Totaal':>14}"
+    total_row = f"{'6%':<6}{f'€ {basis:.2f}':>11}{f'€ {btw:.2f}':>11}{f'€ {totaal:.2f}':>14}"
+
+    # --- 7. Te Betalen string ---
     te_betalen_str = "TE BETALEN!"
 
-    # --- Footer ---
-    footer_text = f"Totaal: € {totaal:.2f}"
+    # --- 8. Totaalbedrag string ---
+    totaal_bedrag_str = f"Totaal: € {totaal:.2f}"
+
+    # --- 9. Footer (rest) ---
     footer_lines = [
-        footer_text.rjust(BON_WIDTH),
         "Eet smakelijk! Tot ziens!".center(BON_WIDTH),
         "Di-Zo 17:00-20:30".center(BON_WIDTH)
     ]
+    footer_str = "\n".join(footer_lines)
 
+    # De volgorde van de return-waarden moet overeenkomen met wat main.py verwacht (10 items)
     return (
-        "\n".join(header_lines),
-        "\n".join(info_lines),
-        "\n".join(address_lines),
-        "\n".join(details_lines),
-        total_lines[1],  # kolomkop (header)
-        total_lines[2],  # kolomwaarden (row)
-        te_betalen_str,  # te_betalen_str
-        footer_lines[0],  # alleen "Totaal: ..." (voor vetgedrukt)
-        "\n".join(footer_lines[1:]),  # overig footer
-        full_address_for_qr  # qr string
+        header_str,  # 1
+        info_str,  # 2
+        address_str,  # 3
+        details_str,  # 4 (Samengevoegde string van alle details)
+        total_header,  # 5
+        total_row,  # 6
+        te_betalen_str,  # 7
+        totaal_bedrag_str,  # 8
+        footer_str,  # 9
+        address_for_qr  # 10 (qr string voor QR-generatie)
     )

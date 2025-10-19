@@ -447,6 +447,43 @@
         "Extra scampi": 3
       }
     },
+    "Scampi dello chef": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {
+        "Extra scampi": 3
+      }
+    },
+    "Scampi diabolique": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {
+        "Extra scampi": 3
+      }
+    },
+    "Zalm schotel": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {}
+    },
     "default": {
       "bijgerecht": [
         "Frieten",
@@ -454,17 +491,6 @@
         "Kroketten",
         "Aardappelen"
       ],
-      "sauzen": [
-        "Looksaus",
-        "Samurai",
-        "Cocktail",
-        "Curry",
-        "Andalouse",
-        "Ketchup",
-        "Mayonaise",
-        "Bbqsaus"
-      ],
-      "sauzen_aantal": 2,
       "garnering": {
         "Extra scampi": 3
       }
