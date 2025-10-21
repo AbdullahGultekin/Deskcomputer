@@ -316,11 +316,18 @@ def _save_and_print_from_preview(full_bon_text_for_print):
                 except Exception as e:
                     messagebox.showwarning("Printfout (Windows)", f"Fout bij printen naar '{printer_name}': {e}.")
             if not printed_successfully:
-                # Fall-back naar Notepad /p (standaardprinter)
-                messagebox.showwarning("Print naar standaardprinter (Windows)",
-                                       "Bon wordt naar de standaardprinter gestuurd via Notepad (/p). Controleer of dit de gewenste printer is.")
-                subprocess.Popen(["notepad.exe", "/p", tmp.name], shell=True)
-                messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
+                try:
+                    # Open de Windows printdialoog voor het tijdelijke bestand
+                    # Dit werkt op Windows 10/11 en toont de standaard/printerkiezer
+                    cmd = [
+                        "powershell",
+                        "-Command",
+                        f"Start-Process -FilePath '{tmp.name}' -Verb Print"
+                    ]
+                    subprocess.run(cmd, check=True)
+                    messagebox.showinfo("Print", f"Bon {bonnummer} naar printerdialoog gestuurd.")
+                except Exception as e:
+                    messagebox.showwarning("Print dialoog mislukt", f"Kon printdialoog niet openen: {e}")
         else:  # Voor Linux/macOS
             try:
                 if printer_name and printer_name.lower() != "default":
