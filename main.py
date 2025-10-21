@@ -298,20 +298,24 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         if os.name == "nt":  # Voor Windows
             if printer_name and printer_name.lower() != "default":
                 try:
-                    # Poging om direct naar de gespecificeerde printer te printen met het 'print' commando.
-                    # Dit commando is vaak onderdeel van cmd.exe, dus shell=True is nodig.
-                    # Let op: De betrouwbaarheid hiervan hangt af van de printerdriver en het type printer.
-                    subprocess.run(['print', '/d:"' + printer_name + '"', tmp.name], check=True, shell=True)
+                    # De 'print' command is zeer basic en werkt niet altijd betrouwbaar.
+                    # Sommige moderne printers reageren hier niet goed op.
+                    # Het werkt alleen voor tekstbestanden.
+                    # Check=True om een CalledProcessError te krijgen als het commando mislukt.
+                    subprocess.run(['print', '/d:' + printer_name, tmp.name], check=True, shell=True)
                     printed_successfully = True
                     messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
                 except subprocess.CalledProcessError as e:
+                    # Dit betekent dat het 'print' commando wel is uitgevoerd, maar een fout gaf.
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Kon niet direct naar '{printer_name}' printen via 'print' commando: {e.stderr.decode().strip() if e.stderr else e}. "
-                                           f"Controleer of de printernaam correct is en de printer correct is geconfigureerd. "
+                                           f"Kon niet direct naar '{printer_name}' printen via 'print' commando. "
+                                           f"Mogelijke oorzaken: printernaam onjuist, printer niet klaar, of driverprobleem. "
+                                           f"Fout: {e.stderr.decode().strip() if e.stderr else e.returncode}. "
                                            f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
                 except FileNotFoundError:
+                    # Dit kan gebeuren als 'print' zelf niet gevonden wordt, of de printer niet bestaat als 'file'.
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Het 'print' commando is niet gevonden of de opgegeven printer '{printer_name}' bestaat niet. "
+                                           f"Het 'print' commando of de opgegeven printer '{printer_name}' is niet gevonden/toegankelijk. "
                                            f"Controleer de printernaam en systeeminstellingen. "
                                            f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
                 except Exception as e:
@@ -330,31 +334,29 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         else:  # Voor Linux/macOS
             try:
                 if printer_name and printer_name.lower() != "default":
-                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True)  # check=True om fouten te vangen
+                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True, capture_output=True,
+                                   text=True)  # check=True om fouten te vangen
                     messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
                 else:
-                    subprocess.run(["lpr", tmp.name], check=True)
+                    subprocess.run(["lpr", tmp.name], check=True, capture_output=True, text=True)
                     messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
                 printed_successfully = True
             except subprocess.CalledProcessError as e:
                 messagebox.showerror("Printfout (Linux/macOS)",
-                                     f"Kon niet printen met 'lpr': {e.stderr.decode().strip() if e.stderr else e}. "
-                                     f"Controleer of de printer '{printer_name}' (indien gespecificeerd) correct is geconfigureerd in CUPS en het 'lpr' commando beschikbaar is.")
+                                     f"Kon niet printen met 'lpr'. Controleer printer '{printer_name}' (indien gespecificeerd) en CUPS configuratie. "
+                                     f"Foutmelding: {e.stderr.strip()}")
             except FileNotFoundError:
                 messagebox.showerror("Printfout (Linux/macOS)",
                                      "Het 'lpr' commando is niet gevonden. Zorg dat CUPS is geïnstalleerd en geconfigureerd.")
             except Exception as e:
                 messagebox.showerror("Printfout (Linux/macOS)", f"Een onverwachte fout trad op bij het printen: {e}.")
 
-    except FileNotFoundError:
-        messagebox.showerror("Fout",
-                             "Printerprogramma (zoals 'notepad.exe' of 'lpr') niet gevonden. Zorg dat het correct geïnstalleerd en in PATH is.")
-    except Exception as e:
+    except Exception as e:  # Algemene catch voor problemen met tijdelijk bestand of initialisatie
         messagebox.showerror("Print",
                              f"Printen mislukt: {e}\nControleer of de printer is aangesloten en geconfigureerd.")
     finally:
         if tmp and os.path.exists(tmp.name):
-            os.unlink(tmp.name)
+            os.unlink(tmp.name)  # Zorg ervoor dat het tijdelijke bestand wordt verwijderd
 
 
 # NIEUW: Functie om het afdrukvoorbeeld te tonen (triggered door Ctrl+P)
