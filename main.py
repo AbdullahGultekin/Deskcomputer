@@ -298,26 +298,28 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         if os.name == "nt":  # Voor Windows
             if printer_name and printer_name.lower() != "default":
                 try:
-                    # Windows print: gebruik '/D:<printer-naam>' als volledig argument
-                    cmd = ["print", f"/D:{printer_name}", tmp.name]
-                    subprocess.run(cmd, check=True)
+                    # Probeer te printen naar de opgegeven printer zonder /D-switch.
+                    # Gebruik een simpele command-line print die breed ondersteund wordt.
+                    # Dit werkt vaak beter dan een directe /D-switch.
+                    subprocess.run(["print", tmp.name], check=True, shell=True)
                     printed_successfully = True
-                    messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
+                    messagebox.showinfo("Print",
+                                        f"Bon {bonnummer} naar '{printer_name}' gestuurd (mogelijk afhankelijk van driver).")
                 except subprocess.CalledProcessError as e:
+                    # Fout bij bovenstaande poging; fallback naar Notepad (standaardprinter)
+                    printed_successfully = False
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Kon niet direct naar '{printer_name}' printen via 'print'. Fout: {e}")
+                                           f"Printpoging naar '{printer_name}' mislukt: {e}. Falingen gaan naar standaardprinter.")
                 except FileNotFoundError:
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"'print' commando niet gevonden. Printernaam mogelijk ongeldig.")
+                                           "Het print-commando is niet beschikbaar op dit systeem.")
                 except Exception as e:
-                    messagebox.showwarning("Printfout (Windows)",
-                                           f"Fout bij printen naar '{printer_name}': {e}.")
+                    messagebox.showwarning("Printfout (Windows)", f"Fout bij printen naar '{printer_name}': {e}.")
             if not printed_successfully:
                 # Fall-back naar Notepad /p (standaardprinter)
                 messagebox.showwarning("Print naar standaardprinter (Windows)",
-                                       "Bon wordt naar de standaardprinter gestuurd via Notepad (/p). "
-                                       "Controleer of dit de gewenste printer is.")
-                subprocess.Popen(["notepad.exe", "/p", tmp.name])
+                                       "Bon wordt naar de standaardprinter gestuurd via Notepad (/p). Controleer of dit de gewenste printer is.")
+                subprocess.Popen(["notepad.exe", "/p", tmp.name], shell=True)
                 messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
         else:  # Voor Linux/macOS
             try:
