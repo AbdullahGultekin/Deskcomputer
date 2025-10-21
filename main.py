@@ -7,6 +7,9 @@ from datetime import timedelta
 import os
 import csv
 import database
+import tempfile
+import subprocess
+
 from bon_generator import generate_bon_text
 from modules.koeriers import open_koeriers
 from modules.geschiedenis import open_geschiedenis
@@ -143,7 +146,7 @@ load_data()
 database.initialize_database()
 
 
-# Functie om printerinstellingen te openen
+# Functie om printerinstellingen te openen (onveranderd)
 def open_printer_settings():
     settings_win = tk.Toplevel(root)
     settings_win.title("Printer Instellingen")
@@ -165,26 +168,45 @@ def open_printer_settings():
 
     tk.Button(settings_win, text="Opslaan", command=save_settings, bg="#D1FFD1", font=("Arial", 10)).pack(pady=10)
 
-def bestelling_opslaan():
+
+# NIEUW: Helper functie om huidige bestelgegevens te verzamelen
+def _get_current_order_data():
     global bestelregels
+
     if not bestelregels:
         messagebox.showerror("Fout", "Er zijn geen producten toegevoegd aan de bestelling!")
-        return
+        return None, None, None  # Geen data
 
     telefoon = telefoon_entry.get().strip()
     if not telefoon:
         messagebox.showerror("Fout", "Vul een telefoonnummer in!")
-        return
+        return None, None, None  # Geen data
 
     klant_data = {
         "telefoon": telefoon,
         "adres": adres_entry.get(),
         "nr": nr_entry.get(),
         "postcode_gemeente": postcode_var.get(),
-        "opmerking": ctrl["opmerking"].get()  # Gebruik ctrl["opmerking"]
+        "opmerking": ctrl["opmerking"].get()
     }
+
+    # Bonnummer wordt pas bij opslaan definitief, maar we hebben een tijdelijke nodig voor preview
+    temp_bonnummer = database.get_next_bonnummer(peek_only=True)  # Aangenomen dat database.py een peek_only optie heeft
+
+    return klant_data, list(bestelregels), temp_bonnummer
+
+
+# REFACtORED: bestelling_opslaan zal nu alleen opslaan en de UI opschonen, NIET direct printen of preview tonen
+def bestelling_opslaan():
+    global bestelregels
+
+    klant_data, order_items, _ = _get_current_order_data()
+    if klant_data is None:  # Geen geldige data verzameld
+        return False, None  # Geef aan dat opslaan mislukt is en geen bontekst
+
+    telefoon = klant_data["telefoon"]
     klant_naam_of_opmerking = ctrl["opmerking"].get() if ctrl[
-        "opmerking"].get() else telefoon  # Gebruik ctrl["opmerking"]
+        "opmerking"].get() else telefoon
 
     voeg_klant_toe_indien_nodig(
         telefoon=klant_data["telefoon"],
@@ -202,53 +224,44 @@ def bestelling_opslaan():
         klant_id_row = cursor.fetchone()
         if not klant_id_row:
             messagebox.showerror("Database Fout", "Kon de klant niet vinden of aanmaken.")
-            conn.rollback()  # Gebruik conn.rollback() hier
+            conn.rollback()
             conn.close()
-            return
-        klant_id = klant_id_row[0]
+            return False, None
 
+        klant_id = klant_id_row[0]
         nu = datetime.datetime.now()
-        totaal_prijs = sum(item['prijs'] * item['aantal'] for item in bestelregels)
-        bonnummer = database.get_next_bonnummer()
+        totaal_prijs = sum(item['prijs'] * item['aantal'] for item in order_items)
+        bonnummer = database.get_next_bonnummer()  # Haal het definitieve bonnummer op
+
         cursor.execute(
             "INSERT INTO bestellingen (klant_id, datum, tijd, totaal, opmerking, bonnummer) VALUES (?, ?, ?, ?, ?, ?)",
             (klant_id, nu.strftime('%Y-%m-%d'), nu.strftime('%H:%M'), totaal_prijs, klant_data["opmerking"], bonnummer)
         )
         bestelling_id = cursor.lastrowid
 
-        for regel in bestelregels:
+        for regel in order_items:
             cursor.execute(
                 "INSERT INTO bestelregels (bestelling_id, categorie, product, aantal, prijs, extras) VALUES (?, ?, ?, ?, ?, ?)",
                 (bestelling_id, regel['categorie'], regel['product'], regel['aantal'], regel['prijs'],
                  json.dumps(regel.get('extras', {})))
             )
 
-        conn.commit()  # Deze commit zal nu effectief de transactie afsluiten.
+        conn.commit()
         database.update_klant_statistieken(klant_id)
         database.boek_voorraad_verbruik(bestelling_id)
 
-        if messagebox.askyesno("Bevestiging", "Bestelling opgeslagen! Wilt u de bon bekijken?"):
-            # open_bon_viewer roept zelf generate_bon_text aan en beheert de UI en print-functionaliteit
-            open_bon_viewer(
-                root,
-                klant_data,
-                bestelregels,
-                bonnummer,
-                menu_data,  # Globale menu_data
-                EXTRAS,  # Globale EXTRAS
-                app_settings  # Globale app_settings
-            )
-        else:
-            messagebox.showinfo("Bevestiging", "Bestelling opgeslagen!")
+        messagebox.showinfo("Bevestiging", "Bestelling succesvol opgeslagen!")
 
-        # UI opschonen na bestelling, ongeacht of de bon is bekeken
+        # UI opschonen na bestelling
         telefoon_entry.delete(0, tk.END)
         adres_entry.delete(0, tk.END)
         nr_entry.delete(0, tk.END)
         postcode_var.set(postcodes[0])
-        ctrl["opmerking"].set("")  # Gebruik ctrl["opmerking"]
+        ctrl["opmerking"].set("")
         bestelregels.clear()
         update_overzicht()
+
+        return True, bonnummer  # Geef aan dat opslaan gelukt is
 
     except Exception as e:
         conn.rollback()
@@ -259,8 +272,108 @@ def bestelling_opslaan():
                 lf.write(f"[{dt.datetime.now()}] bestelling_opslaan: {traceback.format_exc()}\n")
         except:
             pass
+        return False, None
     finally:
         conn.close()
+
+
+# NIEUW: Callback functie die door bon_viewer wordt aangeroepen om op te slaan en af te drukken
+def _save_and_print_from_preview(full_bon_text_for_print):
+    # Eerst opslaan
+    success, bonnummer = bestelling_opslaan()
+    if not success:
+        messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
+        return
+
+    # Daarna afdrukken
+    tmp = None  # Initialiseer tmp
+    try:
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
+        tmp.write(full_bon_text_for_print)
+        tmp.close()
+
+        printer_name = app_settings.get("thermal_printer_name", "Default")
+        printed_successfully = False
+
+        if os.name == "nt":  # Voor Windows
+            if printer_name and printer_name.lower() != "default":
+                try:
+                    # Poging om direct naar de gespecificeerde printer te printen met het 'print' commando.
+                    # Dit commando is vaak onderdeel van cmd.exe, dus shell=True is nodig.
+                    # Let op: De betrouwbaarheid hiervan hangt af van de printerdriver en het type printer.
+                    subprocess.run(['print', '/d:"' + printer_name + '"', tmp.name], check=True, shell=True)
+                    printed_successfully = True
+                    messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
+                except subprocess.CalledProcessError as e:
+                    messagebox.showwarning("Printfout (Windows)",
+                                           f"Kon niet direct naar '{printer_name}' printen via 'print' commando: {e.stderr.decode().strip() if e.stderr else e}. "
+                                           f"Controleer of de printernaam correct is en de printer correct is geconfigureerd. "
+                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
+                except FileNotFoundError:
+                    messagebox.showwarning("Printfout (Windows)",
+                                           f"Het 'print' commando is niet gevonden of de opgegeven printer '{printer_name}' bestaat niet. "
+                                           f"Controleer de printernaam en systeeminstellingen. "
+                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
+                except Exception as e:
+                    messagebox.showwarning("Printfout (Windows)",
+                                           f"Een onverwachte fout trad op bij het printen naar '{printer_name}': {e}. "
+                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
+
+            if not printed_successfully:
+                # Terugval naar notepad.exe /p, wat altijd naar de standaardprinter print.
+                messagebox.showwarning("Print naar standaardprinter (Windows)",
+                                       f"De bon wordt nu naar uw standaardprinter gestuurd via Notepad. "
+                                       f"Als dit niet de gewenste thermische printer is, stel deze dan in als uw standaardprinter in Windows-instellingen, of controleer de ingevoerde printernaam.")
+                subprocess.Popen(["notepad.exe", "/p", tmp.name], shell=True)
+                messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
+
+        else:  # Voor Linux/macOS
+            try:
+                if printer_name and printer_name.lower() != "default":
+                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True)  # check=True om fouten te vangen
+                    messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
+                else:
+                    subprocess.run(["lpr", tmp.name], check=True)
+                    messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
+                printed_successfully = True
+            except subprocess.CalledProcessError as e:
+                messagebox.showerror("Printfout (Linux/macOS)",
+                                     f"Kon niet printen met 'lpr': {e.stderr.decode().strip() if e.stderr else e}. "
+                                     f"Controleer of de printer '{printer_name}' (indien gespecificeerd) correct is geconfigureerd in CUPS en het 'lpr' commando beschikbaar is.")
+            except FileNotFoundError:
+                messagebox.showerror("Printfout (Linux/macOS)",
+                                     "Het 'lpr' commando is niet gevonden. Zorg dat CUPS is geïnstalleerd en geconfigureerd.")
+            except Exception as e:
+                messagebox.showerror("Printfout (Linux/macOS)", f"Een onverwachte fout trad op bij het printen: {e}.")
+
+    except FileNotFoundError:
+        messagebox.showerror("Fout",
+                             "Printerprogramma (zoals 'notepad.exe' of 'lpr') niet gevonden. Zorg dat het correct geïnstalleerd en in PATH is.")
+    except Exception as e:
+        messagebox.showerror("Print",
+                             f"Printen mislukt: {e}\nControleer of de printer is aangesloten en geconfigureerd.")
+    finally:
+        if tmp and os.path.exists(tmp.name):
+            os.unlink(tmp.name)
+
+
+# NIEUW: Functie om het afdrukvoorbeeld te tonen (triggered door Ctrl+P)
+def show_print_preview(event=None):
+    klant_data, order_items, temp_bonnummer = _get_current_order_data()
+    if klant_data is None:  # Geen geldige data om te previewen
+        return
+
+    # Toon het afdrukvoorbeeld
+    open_bon_viewer(
+        root,
+        klant_data,
+        order_items,
+        temp_bonnummer,
+        menu_data,
+        EXTRAS,
+        app_settings,
+        _save_and_print_from_preview  # Geef de callback mee
+    )
 
 
 def update_overzicht():
@@ -888,7 +1001,7 @@ def test_bestellingen_vullen():
 
 # GUI opzet START
 root = tk.Tk()
-_initialize_app_variables(root)  # Belangrijk: initialisatie van Tkinter variabelen na het maken van de root
+_initialize_app_variables(root)
 root.title("Pizzeria Bestelformulier")
 root.geometry("1400x900")
 root.minsize(1200, 800)
@@ -955,14 +1068,19 @@ tk.Button(knoppen_frame, text="Printer Instellingen", command=open_printer_setti
 tk.Button(knoppen_frame, text="Koeriers",
           command=lambda: open_koeriers(root),
           bg="#E1FFE1", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(10, 0))
-tk.Button(knoppen_frame, text="Opslaan bestelling(en)", command=bestelling_opslaan, bg="#D1FFD1",
+# Bestelling opslaan knop roept nu de print_preview functie aan
+tk.Button(knoppen_frame, text="Bon Afdrukken/Opslaan", command=show_print_preview, bg="#D1FFD1",
           font=("Arial", 11), padx=10, pady=5).pack(side=tk.RIGHT)
 tk.Button(knoppen_frame, text="TEST", command=test_bestellingen_vullen, bg="yellow",
           font=("Arial", 10), padx=5, pady=2).pack(side=tk.RIGHT, padx=(0, 10))
 
+# BINDING VOOR CTRL+P / CMD+P
+root.bind("<Control-p>", show_print_preview)  # Voor Windows/Linux
+root.bind("<Command-p>", show_print_preview)  # Voor macOS
+
 # Stel de initiële categorie in nadat de mainloop is gestart
 categories = load_menu_categories()
 if categories:
-    root.after(100, lambda: on_select_categorie(categories[0]))  # <-- Uitgestelde aanroep
+    root.after(100, lambda: on_select_categorie(categories[0]))
 
 root.mainloop()

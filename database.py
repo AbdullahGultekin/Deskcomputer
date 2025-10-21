@@ -375,22 +375,6 @@ def create_tables():
     print("Tabellen zijn aangemaakt/bijgewerkt (indien nodig).")
 
 
-def get_next_bonnummer():
-    """Genereert een uniek, oplopend bonnummer voor het huidige jaar."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    current_year = datetime.datetime.now().year
-    try:
-        cursor.execute("INSERT OR IGNORE INTO bon_teller (jaar, laatste_nummer) VALUES (?, 0)", (current_year,))
-        cursor.execute("UPDATE bon_teller SET laatste_nummer = laatste_nummer + 1 WHERE jaar = ?", (current_year,))
-        conn.commit()
-        cursor.execute("SELECT laatste_nummer FROM bon_teller WHERE jaar = ?", (current_year,))
-        new_number = cursor.fetchone()['laatste_nummer']
-        return f"{current_year}{new_number:04d}"
-    finally:
-        conn.close()
-
-
 def migrate_klanten_from_csv():
     """Migreert klantgegevens van klanten.csv naar de SQLite database, indien nodig."""
     if not os.path.exists("klanten.csv"):
@@ -592,6 +576,45 @@ def boek_voorraad_verbruik(bestelling_id: int):
         conn.commit()
     finally:
         conn.close()
+
+
+def get_next_bonnummer(peek_only=False):
+    """
+    Genereert een uniek, oplopend bonnummer voor het huidige jaar.
+    Als peek_only=True, retourneert het volgende nummer zonder de teller te verhogen.
+    Het bonnummer wordt geretourneerd als een string in het formaat 'YYYYNNNN'.
+    Deze functie gebruikt de 'bon_teller' tabel voor het beheer van de nummers.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    current_year = datetime.datetime.now().year
+    try:
+        # Zorg ervoor dat er een entry is voor het huidige jaar in bon_teller.
+        # Als het jaar nog niet bestaat, wordt het ingevoegd met laatste_nummer = 0.
+        cursor.execute("INSERT OR IGNORE INTO bon_teller (jaar, laatste_nummer) VALUES (?, 0)", (current_year,))
+        # Belangrijk: commit de INSERT OR IGNORE, anders ziet de volgende SELECT het mogelijk niet in dezelfde transactie.
+        conn.commit()
+
+        # Haal het huidige laatste_nummer op voor het huidige jaar.
+        cursor.execute("SELECT laatste_nummer FROM bon_teller WHERE jaar = ?", (current_year,))
+        result = cursor.fetchone()
+        # current_last_number zou geen None moeten zijn na INSERT OR IGNORE, maar een fallback is goed
+        current_last_number = result['laatste_nummer'] if result else 0
+
+        # Bereken het volgende nummer.
+        next_number = current_last_number + 1
+
+        if not peek_only:
+            # Als het geen 'peek' is, update dan de teller in de database met het nieuwe nummer.
+            cursor.execute("UPDATE bon_teller SET laatste_nummer = ? WHERE jaar = ?", (next_number, current_year))
+            conn.commit()
+        # Als peek_only=True, dan wordt de teller niet geüpdatet in de database.
+
+        # Formatteer het bonnummer als een string (bijv. "20250001").
+        return f"{current_year}{next_number:04d}"
+    finally:
+        conn.close()
+
 
 def initialize_database():
     """Initialiseert de database: maakt tabellen aan en migreert data."""
