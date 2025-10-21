@@ -298,39 +298,27 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         if os.name == "nt":  # Voor Windows
             if printer_name and printer_name.lower() != "default":
                 try:
-                    # De 'print' command is zeer basic en werkt niet altijd betrouwbaar.
-                    # Sommige moderne printers reageren hier niet goed op.
-                    # Het werkt alleen voor tekstbestanden.
-                    # Check=True om een CalledProcessError te krijgen als het commando mislukt.
-                    subprocess.run(['print', '/d:' + printer_name, tmp.name], check=True, shell=True)
+                    # Windows print: gebruik '/D:<printer-naam>' als volledig argument
+                    cmd = ["print", f"/D:{printer_name}", tmp.name]
+                    subprocess.run(cmd, check=True)
                     printed_successfully = True
                     messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
                 except subprocess.CalledProcessError as e:
-                    # Dit betekent dat het 'print' commando wel is uitgevoerd, maar een fout gaf.
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Kon niet direct naar '{printer_name}' printen via 'print' commando. "
-                                           f"Mogelijke oorzaken: printernaam onjuist, printer niet klaar, of driverprobleem. "
-                                           f"Fout: {e.stderr.decode().strip() if e.stderr else e.returncode}. "
-                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
+                                           f"Kon niet direct naar '{printer_name}' printen via 'print'. Fout: {e}")
                 except FileNotFoundError:
-                    # Dit kan gebeuren als 'print' zelf niet gevonden wordt, of de printer niet bestaat als 'file'.
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Het 'print' commando of de opgegeven printer '{printer_name}' is niet gevonden/toegankelijk. "
-                                           f"Controleer de printernaam en systeeminstellingen. "
-                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
+                                           f"'print' commando niet gevonden. Printernaam mogelijk ongeldig.")
                 except Exception as e:
                     messagebox.showwarning("Printfout (Windows)",
-                                           f"Een onverwachte fout trad op bij het printen naar '{printer_name}': {e}. "
-                                           f"Wordt nu geprobeerd naar de standaardprinter te sturen via Notepad.")
-
+                                           f"Fout bij printen naar '{printer_name}': {e}.")
             if not printed_successfully:
-                # Terugval naar notepad.exe /p, wat altijd naar de standaardprinter print.
+                # Fall-back naar Notepad /p (standaardprinter)
                 messagebox.showwarning("Print naar standaardprinter (Windows)",
-                                       f"De bon wordt nu naar uw standaardprinter gestuurd via Notepad. "
-                                       f"Als dit niet de gewenste thermische printer is, stel deze dan in als uw standaardprinter in Windows-instellingen, of controleer de ingevoerde printernaam.")
-                subprocess.Popen(["notepad.exe", "/p", tmp.name], shell=True)
+                                       "Bon wordt naar de standaardprinter gestuurd via Notepad (/p). "
+                                       "Controleer of dit de gewenste printer is.")
+                subprocess.Popen(["notepad.exe", "/p", tmp.name])
                 messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
-
         else:  # Voor Linux/macOS
             try:
                 if printer_name and printer_name.lower() != "default":
