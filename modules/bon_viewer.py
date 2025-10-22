@@ -42,9 +42,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     # and has been formatted for the exact BON_WIDTH.
     # We explicitly add blank lines *between* these major sections for visual separation.
     full_bon_text_for_print = (
-            header_str + "\n\n" +  # Header block, then two newlines for separation
-            info_str.strip() + "\n\n" +  # Info block (strip to remove leading/trailing blank line from info_lines' "" entries), then two newlines
-            address_str + "\n\n" +  # Address block, then two newlines
+            header_str + "\n" +  # Header block, then a single newline for separation
+            info_str.strip() + "\n" +  # Info block, then a single newline
+            address_str + "\n" +  # Address block, then a single newline
             details_str.strip() + "\n" +  # Details block (already includes the BTW table and ends nicely), then one newline
             te_betalen_str + "\n" +  # Te betalen line
             totaal_bedrag_str + "\n" +  # Totaal bedrag line
