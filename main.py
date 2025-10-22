@@ -21,6 +21,14 @@ from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
 from modules.bon_viewer import open_bon_viewer  # <-- NIEUW: Importeer de bon_viewer
+# Voeg toe bij je andere imports bovenaan
+try:
+    from escpos.printer import Usb
+    ESCPOS_AVAILABLE = True
+except ImportError:
+    ESCPOS_AVAILABLE = False
+    print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
+
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
 EXTRAS = {}
@@ -279,6 +287,10 @@ def bestelling_opslaan():
 
 # NIEUW: Callback functie die door bon_viewer wordt aangeroepen om op te slaan en af te drukken
 def _save_and_print_from_preview(full_bon_text_for_print):
+    """
+    Slaat de bestelling op en print de bon naar de thermische printer.
+    Gebruikt ESC/POS voor directe thermische printer communicatie indien beschikbaar.
+    """
     # Eerst opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
@@ -286,53 +298,99 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         return
 
     # Daarna afdrukken
-    tmp = None  # Initialiseer tmp
+    printer_name = app_settings.get("thermal_printer_name", "Default")
+    
+    # Probeer eerst ESC/POS (beste methode voor thermische printers)
+    if ESCPOS_AVAILABLE and printer_name != "Default":
+        try:
+            # EPSON TM-T20II standaard USB ID's
+            # Pas deze aan als je printer andere ID's heeft
+            p = Usb(0x04b8, 0x0e15)
+            
+            # Print de bon direct
+            p.text(full_bon_text_for_print)
+            p.text("\n\n")  # Extra ruimte onderaan
+            p.cut()  # Snijd het papier af
+            
+            messagebox.showinfo("Print", f"Bon {bonnummer} succesvol afgedrukt op thermische printer!")
+            return
+            
+        except Exception as e:
+            # Als ESC/POS faalt, vraag of we moeten doorgaan met fallback
+            response = messagebox.askyesno(
+                "ESC/POS Print Fout", 
+                f"Kon niet printen via ESC/POS: {e}\n\n"
+                f"Wil je proberen te printen via de Windows standaardmethode?"
+            )
+            if not response:
+                return
+    
+    # Fallback: gebruik os.startfile (oude methode)
+    tmp = None
     try:
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
         tmp.write(full_bon_text_for_print)
         tmp.close()
 
-        printer_name = app_settings.get("thermal_printer_name", "Default")
-        printed_successfully = False
-
         if os.name == "nt":  # Voor Windows
             try:
-                # Gebruik os.startfile met de 'print' actie.
-                # Dit is de meest robuuste methode op Windows en opent de printopdracht
-                # voor de standaardprinter die in het systeem is ingesteld.
                 os.startfile(tmp.name, "print")
-                messagebox.showinfo("Print", f"Bon {bonnummer} is naar de standaardprinter gestuurd.")
+                messagebox.showinfo("Print", 
+                    f"Bon {bonnummer} is naar de standaardprinter gestuurd.\n\n"
+                    f"Let op: Voor beste resultaten, installeer python-escpos en configureer "
+                    f"de printer in Printer Instellingen.")
             except Exception as e:
                 messagebox.showerror("Fout bij afdrukken",
-                                     f"Kon de bon niet afdrukken via de standaard Windows-methode.\n"
-                                     f"Zorg ervoor dat 'EPSON TM-T20II Receipt5' is ingesteld als de standaardprinter in Windows.\n\nFoutdetails: {e}")
+                    f"Kon de bon niet afdrukken.\n"
+                    f"Zorg ervoor dat 'EPSON TM-T20II Receipt5' is ingesteld als standaardprinter.\n\n"
+                    f"Foutdetails: {e}")
         else:  # Voor Linux/macOS
             try:
                 if printer_name and printer_name.lower() != "default":
-
-                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True, capture_output=True,
-                                   text=True)  # check=True om fouten te vangen
-                    messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
+                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True)
                 else:
-                    subprocess.run(["lpr", tmp.name], check=True, capture_output=True, text=True)
-                    messagebox.showinfo("Print", f"Bon {bonnummer} naar standaardprinter gestuurd.")
-                printed_successfully = True
-            except subprocess.CalledProcessError as e:
-                messagebox.showerror("Printfout (Linux/macOS)",
-                                     f"Kon niet printen met 'lpr'. Controleer printer '{printer_name}' (indien gespecificeerd) en CUPS configuratie. "
-                                     f"Foutmelding: {e.stderr.strip()}")
-            except FileNotFoundError:
-                messagebox.showerror("Printfout (Linux/macOS)",
-                                     "Het 'lpr' commando is niet gevonden. Zorg dat CUPS is geïnstalleerd en geconfigureerd.")
+                    subprocess.run(["lpr", tmp.name], check=True)
+                messagebox.showinfo("Print", f"Bon {bonnummer} naar printer gestuurd.")
             except Exception as e:
-                messagebox.showerror("Printfout (Linux/macOS)", f"Een onverwachte fout trad op bij het printen: {e}.")
+                messagebox.showerror("Printfout", f"Kon niet printen: {e}")
 
-    except Exception as e:  # Algemene catch voor problemen met tijdelijk bestand of initialisatie
-        messagebox.showerror("Print",
-                             f"Printen mislukt: {e}\nControleer of de printer is aangesloten en geconfigureerd.")
+    except Exception as e:
+        messagebox.showerror("Print", f"Printen mislukt: {e}")
     finally:
         if tmp and os.path.exists(tmp.name):
-            os.unlink(tmp.name)  # Zorg ervoor dat het tijdelijke bestand wordt verwijderd
+            os.unlink(tmp.name)
+
+def find_printer_usb_ids():
+    """
+    Helperfunctie om USB ID's van aangesloten printers te vinden.
+    Roep aan via een debug-knop of via de Python console.
+    """
+    try:
+        import usb.core
+        devices = usb.core.find(find_all=True)
+        
+        printer_info = []
+        for device in devices:
+            try:
+                vendor = f"0x{device.idVendor:04x}"
+                product = f"0x{device.idProduct:04x}"
+                try:
+                    manufacturer = usb.util.get_string(device, device.iManufacturer)
+                    prod_name = usb.util.get_string(device, device.iProduct)
+                    info = f"Vendor: {vendor}, Product: {product}\n  {manufacturer} - {prod_name}"
+                except:
+                    info = f"Vendor: {vendor}, Product: {product}"
+                printer_info.append(info)
+            except:
+                pass
+        
+        if printer_info:
+            messagebox.showinfo("USB Apparaten", "\n\n".join(printer_info))
+        else:
+            messagebox.showinfo("USB Apparaten", "Geen USB-apparaten gevonden.")
+            
+    except ImportError:
+        messagebox.showerror("Fout", "PyUSB niet geïnstalleerd. Installeer met: pip install pyusb")
 
 
 # NIEUW: Functie om het afdrukvoorbeeld te tonen (triggered door Ctrl+P)
