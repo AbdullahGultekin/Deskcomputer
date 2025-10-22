@@ -306,14 +306,12 @@ def _save_and_print_from_preview(full_bon_text_for_print):
             # EPSON TM-T20II standaard USB ID's
             # Pas deze aan als je printer andere ID's heeft
             p = Usb(0x04b8, 0x0e15)
-            
-            # Print de bon direct
             p.text(full_bon_text_for_print)
-            p.text("\n\n")  # Extra ruimte onderaan
-            p.cut()  # Snijd het papier af
-            
+            p.text("\n\n")
+            p.cut()
             messagebox.showinfo("Print", f"Bon {bonnummer} succesvol afgedrukt op thermische printer!")
             return
+
             
         except Exception as e:
             # Als ESC/POS faalt, vraag of we moeten doorgaan met fallback
