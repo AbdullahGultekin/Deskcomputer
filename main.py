@@ -296,41 +296,20 @@ def _save_and_print_from_preview(full_bon_text_for_print):
         printed_successfully = False
 
         if os.name == "nt":  # Voor Windows
-            if printer_name and printer_name.lower() != "default":
-                try:
-                    # Probeer te printen naar de opgegeven printer zonder /D-switch.
-                    # Gebruik een simpele command-line print die breed ondersteund wordt.
-                    # Dit werkt vaak beter dan een directe /D-switch.
-                    subprocess.run(["print", tmp.name], check=True, shell=True)
-                    printed_successfully = True
-                    messagebox.showinfo("Print",
-                                        f"Bon {bonnummer} naar '{printer_name}' gestuurd (mogelijk afhankelijk van driver).")
-                except subprocess.CalledProcessError as e:
-                    # Fout bij bovenstaande poging; fallback naar Notepad (standaardprinter)
-                    printed_successfully = False
-                    messagebox.showwarning("Printfout (Windows)",
-                                           f"Printpoging naar '{printer_name}' mislukt: {e}. Falingen gaan naar standaardprinter.")
-                except FileNotFoundError:
-                    messagebox.showwarning("Printfout (Windows)",
-                                           "Het print-commando is niet beschikbaar op dit systeem.")
-                except Exception as e:
-                    messagebox.showwarning("Printfout (Windows)", f"Fout bij printen naar '{printer_name}': {e}.")
-            if not printed_successfully:
-                try:
-                    # Open de Windows printdialoog voor het tijdelijke bestand
-                    # Dit werkt op Windows 10/11 en toont de standaard/printerkiezer
-                    cmd = [
-                        "powershell",
-                        "-Command",
-                        f"Start-Process -FilePath '{tmp.name}' -Verb Print"
-                    ]
-                    subprocess.run(cmd, check=True)
-                    messagebox.showinfo("Print", f"Bon {bonnummer} naar printerdialoog gestuurd.")
-                except Exception as e:
-                    messagebox.showwarning("Print dialoog mislukt", f"Kon printdialoog niet openen: {e}")
+            try:
+                # Gebruik os.startfile met de 'print' actie.
+                # Dit is de meest robuuste methode op Windows en opent de printopdracht
+                # voor de standaardprinter die in het systeem is ingesteld.
+                os.startfile(tmp.name, "print")
+                messagebox.showinfo("Print", f"Bon {bonnummer} is naar de standaardprinter gestuurd.")
+            except Exception as e:
+                messagebox.showerror("Fout bij afdrukken",
+                                     f"Kon de bon niet afdrukken via de standaard Windows-methode.\n"
+                                     f"Zorg ervoor dat 'EPSON TM-T20II Receipt5' is ingesteld als de standaardprinter in Windows.\n\nFoutdetails: {e}")
         else:  # Voor Linux/macOS
             try:
                 if printer_name and printer_name.lower() != "default":
+
                     subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True, capture_output=True,
                                    text=True)  # check=True om fouten te vangen
                     messagebox.showinfo("Print", f"Bon {bonnummer} naar '{printer_name}' gestuurd.")
