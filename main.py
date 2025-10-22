@@ -9,7 +9,7 @@ import csv
 import database
 import tempfile
 import subprocess
-
+import win32api
 from bon_generator import generate_bon_text
 from modules.koeriers import open_koeriers
 from modules.geschiedenis import open_geschiedenis
@@ -287,73 +287,48 @@ def bestelling_opslaan():
 
 # NIEUW: Callback functie die door bon_viewer wordt aangeroepen om op te slaan en af te drukken
 def _save_and_print_from_preview(full_bon_text_for_print):
-    """
-    Slaat de bestelling op en print de bon naar de thermische printer.
-    Gebruikt ESC/POS voor directe thermische printer communicatie indien beschikbaar.
-    """
     # Eerst opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
         messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
         return
 
-    # Daarna afdrukken
-    printer_name = app_settings.get("thermal_printer_name", "Default")
-    
-    # Probeer eerst ESC/POS (beste methode voor thermische printers)
-    if ESCPOS_AVAILABLE and printer_name != "Default":
-        try:
-            # EPSON TM-T20II standaard USB ID's
-            # Pas deze aan als je printer andere ID's heeft
-            p = Usb(0x04b8, 0x0e15)
-            p.text(full_bon_text_for_print)
-            p.text("\n\n")
-            p.cut()
-            messagebox.showinfo("Print", f"Bon {bonnummer} succesvol afgedrukt op thermische printer!")
-            return
-
-            
-        except Exception as e:
-            # Als ESC/POS faalt, vraag of we moeten doorgaan met fallback
-            response = messagebox.askyesno(
-                "ESC/POS Print Fout", 
-                f"Kon niet printen via ESC/POS: {e}\n\n"
-                f"Wil je proberen te printen via de Windows standaardmethode?"
-            )
-            if not response:
-                return
-    
-    # Fallback: gebruik os.startfile (oude methode)
     tmp = None
     try:
+        # Maak tijdelijk bestand met boninhoud
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
         tmp.write(full_bon_text_for_print)
         tmp.close()
 
-        if os.name == "nt":  # Voor Windows
-            try:
-                os.startfile(tmp.name, "print")
-                messagebox.showinfo("Print", 
-                    f"Bon {bonnummer} is naar de standaardprinter gestuurd.\n\n"
-                    f"Let op: Voor beste resultaten, installeer python-escpos en configureer "
-                    f"de printer in Printer Instellingen.")
-            except Exception as e:
-                messagebox.showerror("Fout bij afdrukken",
-                    f"Kon de bon niet afdrukken.\n"
-                    f"Zorg ervoor dat 'EPSON TM-T20II Receipt5' is ingesteld als standaardprinter.\n\n"
-                    f"Foutdetails: {e}")
-        else:  # Voor Linux/macOS
-            try:
-                if printer_name and printer_name.lower() != "default":
-                    subprocess.run(["lpr", "-P", printer_name, tmp.name], check=True)
-                else:
-                    subprocess.run(["lpr", tmp.name], check=True)
-                messagebox.showinfo("Print", f"Bon {bonnummer} naar printer gestuurd.")
-            except Exception as e:
-                messagebox.showerror("Printfout", f"Kon niet printen: {e}")
+        printer_name = "EPSON TM-T20II Receipt5"  # Exact zoals ingesteld in Windows
+
+        # Print via Windows (win32api)
+        try:
+            win32api.ShellExecute(
+                0,
+                "print",
+                tmp.name,
+                f'/d:"{printer_name}"',
+                ".",
+                0
+            )
+            messagebox.showinfo(
+                "Print",
+                f"Bon {bonnummer} is naar printer '{printer_name}' gestuurd.\n"
+                f"Controleer bonformaat en marges bij je printer-instellingen in Windows!"
+            )
+        except Exception as e:
+            messagebox.showerror(
+                "Fout bij afdrukken",
+                f"Kon de bon niet afdrukken.\n"
+                f"Is '{printer_name}' ingesteld als printer?\n\nFoutdetails: {e}"
+            )
 
     except Exception as e:
-        messagebox.showerror("Print", f"Printen mislukt: {e}")
+        messagebox.showerror(
+            "Print",
+            f"Printen mislukt: {e}\nControleer of de printer is aangesloten en geconfigureerd."
+        )
     finally:
         if tmp and os.path.exists(tmp.name):
             os.unlink(tmp.name)
