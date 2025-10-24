@@ -23,16 +23,15 @@ from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
 from modules.bon_viewer import open_bon_viewer  # <-- NIEUW: Importeer de bon_viewer
+
 # Voeg toe bij je andere imports bovenaan
 try:
     from escpos.printer import Usb
+
     ESCPOS_AVAILABLE = True
 except ImportError:
     ESCPOS_AVAILABLE = False
     print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
-
-
-
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
 EXTRAS = {}
@@ -151,6 +150,7 @@ def load_menu_categories():
     except Exception as e:
         print(f"Een onverwachte fout is opgetreden bij het laden van menu.json: {e}")
         return []
+
 
 def load_data():
     global EXTRAS, menu_data, app_settings
@@ -332,7 +332,7 @@ def find_printer_usb_ids():
     try:
         import usb.core
         devices = usb.core.find(find_all=True)
-        
+
         printer_info = []
         for device in devices:
             try:
@@ -347,12 +347,12 @@ def find_printer_usb_ids():
                 printer_info.append(info)
             except:
                 pass
-        
+
         if printer_info:
             messagebox.showinfo("USB Apparaten", "\n\n".join(printer_info))
         else:
             messagebox.showinfo("USB Apparaten", "Geen USB-apparaten gevonden.")
-            
+
     except ImportError:
         messagebox.showerror("Fout", "PyUSB niet geïnstalleerd. Installeer met: pip install pyusb")
 
