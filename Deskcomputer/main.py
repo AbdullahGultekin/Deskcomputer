@@ -23,6 +23,22 @@ from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
 from modules.bon_viewer import open_bon_viewer  # <-- NIEUW: Importeer de bon_viewer
+import usb.core
+
+# Zet hier je exacte Vendor en Product ID
+VENDOR_ID = 0x04b8
+PRODUCT_ID = 0x0e15
+
+
+def check_usb_epson():
+    dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+    if dev is not None:
+        print("EPSON USB-printer gevonden:", dev)
+    else:
+        print("EPSON USB-printer NIET gevonden!")
+
+
+check_usb_epson()
 
 # Voeg toe bij je andere imports bovenaan
 try:
