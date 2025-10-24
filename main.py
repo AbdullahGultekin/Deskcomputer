@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, Toplevel, scrolledtext, ttk, simpledialog
+from PIL import Image
+from escpos.printer import Usb
 import json
+import qrcode
 import random
 import datetime
 from datetime import timedelta
@@ -9,7 +12,6 @@ import csv
 import database
 import tempfile
 import subprocess
-import win32api
 from bon_generator import generate_bon_text
 from modules.koeriers import open_koeriers
 from modules.geschiedenis import open_geschiedenis
@@ -28,6 +30,8 @@ try:
 except ImportError:
     ESCPOS_AVAILABLE = False
     print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
+
+
 
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
@@ -71,6 +75,21 @@ state = {
     "page_size": 10,
     "gekozen_product": None
 }
+
+
+def print_bon_with_qr(full_bon_text_for_print, qr_data_string):
+    VENDOR_ID = 0x04b8  # Epson (controleer eventueel)
+    PRODUCT_ID = 0x0e15  # TM-T20II (controleer met pyusb of boekje)
+    try:
+        qr_img = qrcode.make(qr_data_string)
+        qr_img = qr_img.resize((180, 180), Image.LANCZOS)
+        p = Usb(VENDOR_ID, PRODUCT_ID, timeout=0)
+        p.set(align='left')
+        p.text(full_bon_text_for_print + "\n")
+        p.image(qr_img)
+        p.cut()
+    except Exception as e:
+        messagebox.showerror("Print Error", f"QR/ESC/POS print niet gelukt: {e}")
 
 
 def _initialize_app_variables(root_window):
@@ -285,53 +304,25 @@ def bestelling_opslaan():
         conn.close()
 
 
-# NIEUW: Callback functie die door bon_viewer wordt aangeroepen om op te slaan en af te drukken
-def _save_and_print_from_preview(full_bon_text_for_print):
-    # Eerst opslaan
+def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr):
+    # Eerst bestelling opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
         messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
         return
-
-    tmp = None
     try:
-        # Maak tijdelijk bestand met boninhoud
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt", mode="w", encoding="utf-8")
-        tmp.write(full_bon_text_for_print)
-        tmp.close()
-
-        printer_name = "EPSON TM-T20II Receipt5"  # Exact zoals ingesteld in Windows
-
-        # Print via Windows (win32api)
-        try:
-            win32api.ShellExecute(
-                0,
-                "print",
-                tmp.name,
-                f'/d:"{printer_name}"',
-                ".",
-                0
-            )
-            messagebox.showinfo(
-                "Print",
-                f"Bon {bonnummer} is naar printer '{printer_name}' gestuurd.\n"
-                f"Controleer bonformaat en marges bij je printer-instellingen in Windows!"
-            )
-        except Exception as e:
-            messagebox.showerror(
-                "Fout bij afdrukken",
-                f"Kon de bon niet afdrukken.\n"
-                f"Is '{printer_name}' ingesteld als printer?\n\nFoutdetails: {e}"
-            )
-
+        # Dit print de bon én de QR via USB/ESC/POS
+        print_bon_with_qr(full_bon_text_for_print, address_for_qr)
+        messagebox.showinfo(
+            "Print",
+            f"Bon {bonnummer} is naar de thermische printer gestuurd. Controleer de bon!"
+        )
     except Exception as e:
         messagebox.showerror(
-            "Print",
-            f"Printen mislukt: {e}\nControleer of de printer is aangesloten en geconfigureerd."
+            "Fout bij afdrukken",
+            f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}"
         )
-    finally:
-        if tmp and os.path.exists(tmp.name):
-            os.unlink(tmp.name)
+
 
 def find_printer_usb_ids():
     """
