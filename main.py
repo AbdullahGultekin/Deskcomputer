@@ -9,6 +9,7 @@ import datetime
 from datetime import timedelta
 import os
 import csv
+import win32print
 import database
 import tempfile
 import subprocess
@@ -304,23 +305,86 @@ def bestelling_opslaan():
         conn.close()
 
 
-def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr):
-    # Eerst bestelling opslaan
+def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
+    """
+    Print bon via Windows spooler met automatisch snijden.
+    address_for_qr is optioneel voor QR-functionaliteit.
+    """
+    # Eerst opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
         messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
         return
+
+    printer_name = "EPSON TM-T20II Receipt5"  # Zorg dat deze exact overeenkomt met Windows
+
     try:
-        # Dit print de bon én de QR via USB/ESC/POS
-        print_bon_with_qr(full_bon_text_for_print, address_for_qr)
-        messagebox.showinfo(
-            "Print",
-            f"Bon {bonnummer} is naar de thermische printer gestuurd. Controleer de bon!"
-        )
+        # Open de printer
+        hprinter = win32print.OpenPrinter(printer_name)
+
+        try:
+            # Start printjob in RAW mode (= directe ESC/POS commando's)
+            hjob = win32print.StartDocPrinter(hprinter, 1, ("Bon", None, "RAW"))
+            win32print.StartPagePrinter(hprinter)
+
+            # ESC/POS commando's
+            ESC = b'\x1b'
+            GS = b'\x1d'
+
+            # Initialize printer
+            win32print.WritePrinter(hprinter, ESC + b'@')
+
+            # Print de bontekst
+            try:
+                bon_bytes = full_bon_text_for_print.encode('cp437', errors='replace')
+            except:
+                bon_bytes = full_bon_text_for_print.encode('utf-8', errors='replace')
+
+            win32print.WritePrinter(hprinter, bon_bytes)
+
+            # Optioneel: QR-code als tekst (indien address_for_qr gegeven is)
+            # ESC/POS native QR code commando (TM-T20II ondersteunt dit)
+            if address_for_qr:
+                # QR Code Model
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x04\x00' + b'1A2\x00')
+                # QR Code Size
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x08')
+                # QR Code Error Correction
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1E0')
+                # QR Code Data
+                qr_data = address_for_qr.encode('utf-8')
+                qr_len = len(qr_data) + 3
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + qr_len.to_bytes(2, 'little') + b'1P0' + qr_data)
+                # Print QR
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1Q0')
+                win32print.WritePrinter(hprinter, b'\n')
+
+            # Feed enkele regels voor marge
+            win32print.WritePrinter(hprinter, b'\n\n\n')
+
+            # SNIJ-COMMANDO (volledig snijden)
+            # GS V m (m=0 voor full cut, m=1 voor partial cut)
+            win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')  # Full cut
+
+            # Alternatief voor partial cut (perforatie):
+            # win32print.WritePrinter(hprinter, GS + b'V' + b'\x01')
+
+            # Beëindig printjob
+            win32print.EndPagePrinter(hprinter)
+            win32print.EndDocPrinter(hprinter)
+
+            messagebox.showinfo(
+                "Print",
+                f"Bon {bonnummer} is naar printer '{printer_name}' gestuurd en gesneden!"
+            )
+
+        finally:
+            win32print.ClosePrinter(hprinter)
+
     except Exception as e:
         messagebox.showerror(
             "Fout bij afdrukken",
-            f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}"
+            f"Kon de bon niet afdrukken op printer '{printer_name}'.\n\nFoutdetails: {e}"
         )
 
 
