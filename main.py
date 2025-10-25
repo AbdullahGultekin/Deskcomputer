@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, Toplevel, scrolledtext, ttk, simpledialog
 from PIL import Image
-from escpos.printer import Usb
 import json
 import qrcode
 import random
@@ -9,7 +8,6 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-import win32print
 import database
 import tempfile
 import subprocess
@@ -23,16 +21,31 @@ from modules.klant_management import open_klant_management
 from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
-from modules.bon_viewer import open_bon_viewer  # <-- NIEUW: Importeer de bon_viewer
+from modules.bon_viewer import open_bon_viewer
+import sys
+import platform
 
-# Voeg toe bij je andere imports bovenaan
-try:
-    from escpos.printer import Usb
+# ============ WINDOWS PRINT SUPPORT ============
+# Conditionele import voor Windows-only modules
+if platform.system() == "Windows":
+    try:
+        import win32print
 
-    ESCPOS_AVAILABLE = True
-except ImportError:
-    ESCPOS_AVAILABLE = False
-    print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
+        WIN32PRINT_AVAILABLE = True
+    except ImportError:
+        WIN32PRINT_AVAILABLE = False
+        print("Waarschuwing: pywin32 niet geïnstalleerd. Windows printer support niet beschikbaar.")
+else:
+    WIN32PRINT_AVAILABLE = False
+    print("Info: win32print is alleen beschikbaar op Windows.")
+
+# Voeg toe bij je andere imports bovenaan (VEROUDERD - NIET MEER NODIG)
+# try:
+#     from escpos.printer import Usb
+#     ESCPOS_AVAILABLE = True
+# except ImportError:
+#     ESCPOS_AVAILABLE = False
+#     print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
 EXTRAS = {}
@@ -319,7 +332,8 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     if not WIN32PRINT_AVAILABLE:
         messagebox.showerror(
             "Platform Error",
-            "Windows printer support niet beschikbaar op dit platform."
+            "Windows printer support niet beschikbaar.\n"
+            "Installeer pywin32: pip install pywin32"
         )
         return
 
@@ -374,13 +388,12 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Left justify
 
             # Print rest van de bon (zonder header die we al geprint hebben)
-            # Split de bon en verwijder de eerste header sectie
             bon_lines = full_bon_text_for_print.split('\n')
 
-            # Vind waar "Type:" begint (na header)
+            # Vind waar "Type:" of "Bon nr:" begint (na header)
             start_idx = 0
             for i, line in enumerate(bon_lines):
-                if 'Type:' in line or 'Bon nr:' in line:
+                if 'Type:' in line or 'Bon nr:' in line or 'Soort bestelling' in line:
                     start_idx = i
                     break
 
@@ -389,30 +402,25 @@ info@pitapizzanapoli.be
             bon_bytes = rest_of_bon.encode('cp437', errors='replace')
             win32print.WritePrinter(hprinter, bon_bytes)
 
-            # QR-CODE NAAST ADRES (als address_for_qr gegeven is)
+            # QR-CODE (als address_for_qr gegeven is)
             if address_for_qr:
                 win32print.WritePrinter(hprinter, b'\n')
 
-                # QR Code ESC/POS commando's (native QR support)
-                # Model
+                # QR Code ESC/POS commando's
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x04\x00' + b'1A2\x00')
-                # Size (grootte 4 = middelgroot)
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x04')
-                # Error Correction
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x06')  # Size 6
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1E0')
-                # Store QR data
                 qr_data = address_for_qr.encode('utf-8')
                 qr_len = len(qr_data) + 3
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + qr_len.to_bytes(2, 'little') + b'1P0' + qr_data)
-                # Print QR
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1Q0')
                 win32print.WritePrinter(hprinter, b'\n')
 
-            # Feed enkele regels voor marge
+            # Feed enkele regels
             win32print.WritePrinter(hprinter, b'\n\n\n')
 
             # SNIJ-COMMANDO
-            win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')  # Full cut
+            win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
 
             win32print.EndPagePrinter(hprinter)
             win32print.EndDocPrinter(hprinter)
