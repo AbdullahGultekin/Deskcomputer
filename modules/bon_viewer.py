@@ -46,7 +46,6 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
             info_str.strip() + "\n" +  # Info block, then a single newline
             address_str + "\n" +  # Address block, then a single newline
             details_str.strip() + "\n" +  # Details block (already includes the BTW table and ends nicely), then one newline
-            te_betalen_str + "\n" +  # Te betalen line
             totaal_bedrag_str + "\n" +  # Totaal bedrag line
             footer_str  # Footer block (contains internal blank lines)
     )
