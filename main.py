@@ -305,25 +305,36 @@ def bestelling_opslaan():
         conn.close()
 
 
+import win32print
+
+
 def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     """
-    Print bon via Windows spooler met automatisch snijden.
-    address_for_qr is optioneel voor QR-functionaliteit.
+    Print bon via Windows spooler met:
+    - Grote header
+    - QR-code naast adres
+    - Automatisch snijden
     """
+    # Check platform
+    if not WIN32PRINT_AVAILABLE:
+        messagebox.showerror(
+            "Platform Error",
+            "Windows printer support niet beschikbaar op dit platform."
+        )
+        return
+
     # Eerst opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
-        messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
+        messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen.")
         return
 
-    printer_name = "EPSON TM-T20II Receipt5"  # Zorg dat deze exact overeenkomt met Windows
+    printer_name = "EPSON TM-T20II Receipt5"
 
     try:
-        # Open de printer
         hprinter = win32print.OpenPrinter(printer_name)
 
         try:
-            # Start printjob in RAW mode (= directe ESC/POS commando's)
             hjob = win32print.StartDocPrinter(hprinter, 1, ("Bon", None, "RAW"))
             win32print.StartPagePrinter(hprinter)
 
@@ -334,24 +345,62 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
             # Initialize printer
             win32print.WritePrinter(hprinter, ESC + b'@')
 
-            # Print de bontekst
-            try:
-                bon_bytes = full_bon_text_for_print.encode('cp437', errors='replace')
-            except:
-                bon_bytes = full_bon_text_for_print.encode('utf-8', errors='replace')
+            # GROTE HEADER - Dubbele hoogte en breedte voor bedrijfsnaam
+            # Justificatie center
+            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Center justify
 
+            # Dubbele grootte (height + width)
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # 2x height, 2x width
+            win32print.WritePrinter(hprinter, b'PITA PIZZA NAPOLI\n')
+
+            # Reset naar normale grootte
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
+            win32print.WritePrinter(hprinter, b'\n')
+
+            # Normale header info (center)
+            header_info = """Brugstraat 12 - 9120 Vrasene
+TEL: 03 / 775 72 28
+FAX: 03 / 755 52 22
+BTW: BE 0479.048.950
+
+Bestel online
+www.pitapizzanapoli.be
+info@pitapizzanapoli.be
+
+"""
+            win32print.WritePrinter(hprinter, header_info.encode('cp437', errors='replace'))
+
+            # Reset naar links uitgelijnd voor rest van bon
+            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Left justify
+
+            # Print rest van de bon (zonder header die we al geprint hebben)
+            # Split de bon en verwijder de eerste header sectie
+            bon_lines = full_bon_text_for_print.split('\n')
+
+            # Vind waar "Type:" begint (na header)
+            start_idx = 0
+            for i, line in enumerate(bon_lines):
+                if 'Type:' in line or 'Bon nr:' in line:
+                    start_idx = i
+                    break
+
+            # Print de rest van de bon
+            rest_of_bon = '\n'.join(bon_lines[start_idx:])
+            bon_bytes = rest_of_bon.encode('cp437', errors='replace')
             win32print.WritePrinter(hprinter, bon_bytes)
 
-            # Optioneel: QR-code als tekst (indien address_for_qr gegeven is)
-            # ESC/POS native QR code commando (TM-T20II ondersteunt dit)
+            # QR-CODE NAAST ADRES (als address_for_qr gegeven is)
             if address_for_qr:
-                # QR Code Model
+                win32print.WritePrinter(hprinter, b'\n')
+
+                # QR Code ESC/POS commando's (native QR support)
+                # Model
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x04\x00' + b'1A2\x00')
-                # QR Code Size
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x08')
-                # QR Code Error Correction
+                # Size (grootte 4 = middelgroot)
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x04')
+                # Error Correction
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1E0')
-                # QR Code Data
+                # Store QR data
                 qr_data = address_for_qr.encode('utf-8')
                 qr_len = len(qr_data) + 3
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + qr_len.to_bytes(2, 'little') + b'1P0' + qr_data)
@@ -362,20 +411,15 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
             # Feed enkele regels voor marge
             win32print.WritePrinter(hprinter, b'\n\n\n')
 
-            # SNIJ-COMMANDO (volledig snijden)
-            # GS V m (m=0 voor full cut, m=1 voor partial cut)
+            # SNIJ-COMMANDO
             win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')  # Full cut
 
-            # Alternatief voor partial cut (perforatie):
-            # win32print.WritePrinter(hprinter, GS + b'V' + b'\x01')
-
-            # Beëindig printjob
             win32print.EndPagePrinter(hprinter)
             win32print.EndDocPrinter(hprinter)
 
             messagebox.showinfo(
                 "Print",
-                f"Bon {bonnummer} is naar printer '{printer_name}' gestuurd en gesneden!"
+                f"Bon {bonnummer} is naar printer gestuurd!"
             )
 
         finally:
@@ -384,7 +428,7 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     except Exception as e:
         messagebox.showerror(
             "Fout bij afdrukken",
-            f"Kon de bon niet afdrukken op printer '{printer_name}'.\n\nFoutdetails: {e}"
+            f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}"
         )
 
 

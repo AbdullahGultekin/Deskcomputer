@@ -4,21 +4,28 @@ from decimal import Decimal, ROUND_HALF_UP
 
 def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None, extras_data=None):
     """
-    Genereert de volledige bontekst in onderdelen voor GUI-opmaak, geoptimaliseerd voor thermische printer.
+    Genereert de volledige bontekst in onderdelen voor GUI-opmaak,
+    geoptimaliseerd voor thermische printer.
     """
     BON_WIDTH = 42  # Aangepast naar 42 karakters voor 80mm bonprinters
 
-    # Bereken de totaalprijs correct aan het begin
+    # Bereken totaalprijs
     totaal = sum(Decimal(str(item['prijs'])) * item['aantal'] for item in bestelregels)
 
-    # --- 1. HEADER ---
+    # ============ 1. HEADER (MET GROTE TEKST) ============
     header_lines = [
-        "PITA PIZZA NAPOLI".center(BON_WIDTH),
-        f"Brugstraat 12".center(BON_WIDTH),
-        f"9120 Vrasene".center(BON_WIDTH),
-        "TEL: 03/775 72 28".center(BON_WIDTH),
-        "BTW: BE 0479.048.950".center(BON_WIDTH),
-        "www.pitapizzanapoli.be".center(BON_WIDTH)
+        "",  # Lege regel
+        "PITA PIZZA NAPOLI",  # Dit wordt groot geprint
+        "",
+        f"Brugstraat 12 - 9120 Vrasene".center(BON_WIDTH),
+        f"TEL: 03 / 775 72 28".center(BON_WIDTH),
+        f"FAX: 03 / 755 52 22".center(BON_WIDTH),
+        f"BTW: BE 0479.048.950".center(BON_WIDTH),
+        "",
+        f"Bestel online".center(BON_WIDTH),
+        f"www.pitapizzanapoli.be".center(BON_WIDTH),
+        f"info@pitapizzanapoli.be".center(BON_WIDTH),
+        ""
     ]
     header_str = "\n".join(header_lines)
 
