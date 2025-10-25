@@ -187,7 +187,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         tarief_str,
         totaal_label,
         totaal_waarde,
-        betaald_str,
         footer_str,
         address_for_qr,
         BON_WIDTH
