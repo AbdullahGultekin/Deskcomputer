@@ -4,18 +4,16 @@ from decimal import Decimal, ROUND_HALF_UP
 
 def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None, extras_data=None):
     """
-    Genereert de volledige bontekst in onderdelen voor GUI-opmaak,
-    geoptimaliseerd voor thermische printer.
+    Genereert bontekst exact zoals de gewenste layout.
     """
-    BON_WIDTH = 42  # 42 karakters voor 80mm bonprinters
+    BON_WIDTH = 42
 
-    # Bereken totaalprijs
     totaal = sum(Decimal(str(item['prijs'])) * item['aantal'] for item in bestelregels)
 
-    # ============ 1. HEADER (MET GROTE TEKST) ============
+    # ============ 1. HEADER ============
     header_lines = [
         "",
-        "PITA PIZZA NAPOLI",  # Dit wordt groot geprint
+        "PITA PIZZA NAPOLI",  # Groot geprint in print functie
         "",
         f"Brugstraat 12 - 9120 Vrasene".center(BON_WIDTH),
         f"TEL: 03 / 775 72 28".center(BON_WIDTH),
@@ -29,241 +27,155 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     ]
     header_str = "\n".join(header_lines)
 
-    # --- 2. BESTELINFO ---
+    # ============ 2. BESTELINFO ============
     nu = datetime.datetime.now()
     bezorgtijd = (nu + datetime.timedelta(minutes=45)).strftime('%H:%M')
 
-    def format_line(label, value_str, separator=':', space_between=1):
-        label_part = f"{label}{separator}"
+    def format_line(label, value_str):
+        label_part = f"{label}:"
         value_part = str(value_str)
-        available_width_for_value = BON_WIDTH - len(label_part) - space_between
-        if len(value_part) > available_width_for_value:
-            value_part = value_part[:available_width_for_value]
         filler_space = BON_WIDTH - len(label_part) - len(value_part)
         return f"{label_part}{' ' * filler_space}{value_part}"
 
     info_lines = [
-        "",
-        format_line("Type", "Tel"),
-        format_line("Bon nr", bonnummer),
+        format_line("Soort bestelling", "Online"),
+        format_line("Bonnummer", bonnummer),
         format_line("Datum", nu.strftime('%d-%m-%Y')),
         format_line("Tijd", nu.strftime('%H:%M')),
-        format_line("Betaling", "Cash"),
-        format_line("Bezorging", bezorgtijd),
-        "",  # EXTRA LEGE REGEL TUSSEN BESTELINFO EN ADRES
+        format_line("Betaalmethode", "Bancontact / Mister Cash"),
+        "",
+        format_line("Bezorgtijd", bezorgtijd),
+        ""
     ]
     info_str = "\n".join(info_lines)
 
-    # --- 3. ADRES (MET NAAM) ---
-    def wrap_text_for_bon(text_to_wrap, indent_len=0, total_width=BON_WIDTH):
-        wrapped = []
-        current_chunk = ""
-        words = text_to_wrap.split(' ')
+    # ============ 3. ADRES (compact, zonder QR hier) ============
+    def wrap_text(text, max_width=BON_WIDTH):
+        words = text.split(' ')
+        lines = []
+        current = ""
         for word in words:
-            test_len = len(current_chunk) + len(word) + (1 if current_chunk else 0)
-            if test_len > (total_width - indent_len):
-                wrapped.append((" " * indent_len) + current_chunk.strip().ljust(total_width - indent_len))
-                current_chunk = word + " "
+            test = f"{current} {word}".strip()
+            if len(test) <= max_width:
+                current = test
             else:
-                current_chunk += word + " "
-        if current_chunk.strip():
-            wrapped.append((" " * indent_len) + current_chunk.strip().ljust(total_width - indent_len))
-        return wrapped
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return lines
 
-    address_lines = ["Leveradres:".ljust(BON_WIDTH)]
+    address_lines = ["Leveringsadres:"]
+    address_lines.extend(wrap_text(f"{klant['adres']} {klant['nr']}"))
+    address_lines.extend(wrap_text(f"{klant['postcode_gemeente']}"))
+    address_lines.extend(wrap_text(klant['telefoon']))
+    address_lines.append("")  # Lege regel voor Dhr./Mvr.
 
-    # NAAM TOEVOEGEN (indien beschikbaar)
+    # Dhr./Mvr. en naam
     if klant.get("naam"):
-        address_lines.extend(wrap_text_for_bon(klant["naam"], indent_len=0))
+        address_lines.append("Dhr. / Mvr.")
+        address_lines.extend(wrap_text(klant["naam"]))
 
-    address_lines.extend(wrap_text_for_bon(f"{klant['adres']} {klant['nr']}", indent_len=0))
-    address_lines.extend(wrap_text_for_bon(f"{klant['postcode_gemeente']}", indent_len=0))
-    address_lines.extend(wrap_text_for_bon(f"{klant['telefoon']}", indent_len=0))
-
-    address_lines.append("")  # EXTRA LEGE REGEL TUSSEN ADRES EN DETAILS
+    address_lines.append("")  # Lege regel voor details
 
     address_str = "\n".join(address_lines)
-
-    # --- 4. QR Adres string (voor QR-generatie RECHTS van adres) ---
     address_for_qr = f"{klant['adres']} {klant['nr']}, {klant['postcode_gemeente']}, Belgium"
 
-    # --- 5. DETAILS BESTELLING ---
-    details_output_lines = []
-    details_output_lines.append("Details bestelling".center(BON_WIDTH))
-    details_output_lines.append("-" * BON_WIDTH)
-
-    ITEM_QTY_COL_WIDTH = 4
-    ITEM_PRICE_COL_WIDTH = 10  # Vergroot voor "€ 12,50" formaat
-    ITEM_NAME_COL_WIDTH_FIRST_LINE = BON_WIDTH - ITEM_QTY_COL_WIDTH - ITEM_PRICE_COL_WIDTH
-    ITEM_INDENT_WIDTH = 2
-    ITEM_NAME_COL_WIDTH_SUBSEQUENT_LINES = BON_WIDTH - ITEM_INDENT_WIDTH
+    # ============ 4. DETAILS BESTELLING ============
+    details_lines = ["Details bestelling"]
 
     for item in bestelregels:
         aantal = item['aantal']
-        product_prijs_per_stuk = Decimal(str(item['prijs']))
-        product_totaal_prijs = product_prijs_per_stuk * aantal
+        prijs_per_stuk = Decimal(str(item['prijs']))
+        totaal_prijs = prijs_per_stuk * aantal
 
-        original_product_name = item['product']
-        cat_lower = item['categorie'].lower()
-        display_product_name = original_product_name
+        product_naam = item['product']
+        cat = item['categorie'].upper()
 
-        category_abbreviations_with_name_part = {
-            "schotels": "SCH", "grote-broodjes": "GR", "klein-broodjes": "KL",
-            "turks-brood": "T", "durum": "D", "kapsalons": "KAP", "pasta's": "PAS",
-            "mix schotels": "MIX", "visgerechten": "VIS", "vegetarisch broodjes": "VEG",
-            "lookbrood": "LB", "sauzen": "SZ", "extra's": "EXT", "dranken": "DR",
-            "salades": "SAL", "desserten": "DES"
-        }
-        pizza_category_abbreviations = {
-            "small pizza's": "S", "medium pizza's": "M", "large pizza's": "L",
-        }
-
-        if cat_lower in category_abbreviations_with_name_part:
-            prefix = category_abbreviations_with_name_part[cat_lower]
-            if original_product_name and '.' in original_product_name and original_product_name.split('.')[
-                0].strip().isdigit():
-                product_name_part = " ".join(original_product_name.split(".")[1:]).strip()
-                display_product_name = f"{prefix} ({product_name_part})"
+        # Kortere afkortingen zoals in gewenste bon
+        if 'pizza' in cat.lower():
+            if 'small' in cat.lower():
+                prefix = "S"
+            elif 'medium' in cat.lower():
+                prefix = "M"
+            elif 'large' in cat.lower():
+                prefix = "L"
             else:
-                display_product_name = f"{prefix} ({original_product_name})"
-        elif cat_lower in pizza_category_abbreviations:
-            prefix = pizza_category_abbreviations[cat_lower]
-            if original_product_name and '.' in original_product_name:
-                nummer_str = original_product_name.split('.')[0].strip()
-                if nummer_str.isdigit():
-                    display_product_name = f"{prefix} {nummer_str}"
-                else:
-                    display_product_name = f"{prefix} {original_product_name}"
-            else:
-                display_product_name = f"{prefix} {original_product_name}"
-
-        qty_prefix = f"{aantal}x "
-        # EURO TEKEN TOEGEVOEGD (was vraagteken)
-        price_text = f"€ {product_totaal_prijs:.2f}".replace('.', ',')
-
-        current_product_lines = wrap_text_for_bon(display_product_name, indent_len=0,
-                                                  total_width=ITEM_NAME_COL_WIDTH_FIRST_LINE)
-
-        if current_product_lines:
-            first_product_line = current_product_lines[0].ljust(ITEM_NAME_COL_WIDTH_FIRST_LINE)
-            line_to_add = f"{qty_prefix:<{ITEM_QTY_COL_WIDTH}}{first_product_line}{price_text:>{ITEM_PRICE_COL_WIDTH}}"
-            details_output_lines.append(line_to_add)
-
-            for i in range(1, len(current_product_lines)):
-                indented_name_part = (" " * ITEM_INDENT_WIDTH) + current_product_lines[i].ljust(
-                    ITEM_NAME_COL_WIDTH_SUBSEQUENT_LINES - ITEM_INDENT_WIDTH)
-                details_output_lines.append(f"{indented_name_part}")
+                prefix = cat[:3]
         else:
-            details_output_lines.append(
-                f"{qty_prefix:<{ITEM_QTY_COL_WIDTH}}{''.ljust(ITEM_NAME_COL_WIDTH_FIRST_LINE)}{price_text:>{ITEM_PRICE_COL_WIDTH}}")
+            prefix = cat.replace(" ", "").replace("-", "")[:10]
 
-        # Half-half pizza's
-        if 'half_half' in item.get('extras', {}) and isinstance(item['extras']['half_half'], list) and len(
-                item['extras']['half_half']) == 2:
-            pizza1_full = item['extras']['half_half'][0]
-            pizza2_full = item['extras']['half_half'][1]
-            pizza1_display = pizza1_full.split('.')[0].strip() if '.' in pizza1_full and pizza1_full.split('.')[
-                0].strip().isdigit() else pizza1_full
-            pizza2_display = pizza2_full.split('.')[0].strip() if '.' in pizza2_full and pizza2_full.split('.')[
-                0].strip().isdigit() else pizza2_full
-            details_output_lines.append(f"{' ' * ITEM_INDENT_WIDTH}> Pizza 1: {pizza1_display}".ljust(BON_WIDTH))
-            details_output_lines.append(f"{' ' * ITEM_INDENT_WIDTH}> Pizza 2: {pizza2_display}".ljust(BON_WIDTH))
+        display_name = f"{prefix} {product_naam}"
 
-        # Extras
+        # Hoofdregel: aantal + naam + prijs
+        qty = f"{aantal}x"
+        price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
+
+        # Naam maximaal BON_WIDTH - qty (4) - price (12) = 26 chars
+        name_max = BON_WIDTH - 4 - 12
+        if len(display_name) > name_max:
+            display_name = display_name[:name_max - 3] + "..."
+
+        line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
+        details_lines.append(line)
+
+        # Extras met ">"
         if item.get('extras'):
             extras = item['extras']
-            garnering_prijzen_per_cat = extras_data.get(cat_lower, {}).get('garnering', {}) if extras_data else {}
 
-            def add_extra_display_line(extra_type_label, extra_value, is_garnering=False):
-                if isinstance(extra_value, list):
-                    for val in extra_value:
-                        add_extra_display_line(extra_type_label, val, is_garnering)
-                elif extra_value:
-                    extra_line_text_base = f"{extra_type_label}: {str(extra_value)}"
-                    extra_line_price_str = ""
+            for key in ['vlees', 'bijgerecht', 'saus', 'sauzen', 'garnering']:
+                if key in extras and extras[key]:
+                    val = extras[key]
+                    if isinstance(val, list):
+                        for v in val:
+                            details_lines.append(f"  > {key.capitalize()}: {v}")
+                    else:
+                        details_lines.append(f"  > {key.capitalize()}: {val}")
 
-                    if is_garnering:
-                        garnering_basis_prijs = Decimal(str(garnering_prijzen_per_cat.get(str(extra_value), 0)))
-                        if garnering_basis_prijs > 0:
-                            extra_line_price_str = f"€ {garnering_basis_prijs * aantal:.2f}".replace('.', ',')
+            # Pasta extra's als + formaat
+            if 'pasta_extras' in extras:
+                for extra in extras['pasta_extras']:
+                    details_lines.append(f"  + {extra.upper()}")
 
-                    line_prefix = " " * ITEM_INDENT_WIDTH + "> "
-                    effective_max_text_width = BON_WIDTH - len(line_prefix) - len(extra_line_price_str)
-                    current_extra_text_lines = wrap_text_for_bon(extra_line_text_base, indent_len=0,
-                                                                 total_width=effective_max_text_width)
-
-                    if current_extra_text_lines:
-                        first_extra_line_text_formatted = current_extra_text_lines[0].ljust(effective_max_text_width)
-                        details_output_lines.append(
-                            f"{line_prefix}{first_extra_line_text_formatted}{extra_line_price_str}")
-                        for i in range(1, len(current_extra_text_lines)):
-                            indented_extra_line = current_extra_text_lines[i].ljust(BON_WIDTH - len(line_prefix))
-                            details_output_lines.append(f"{' ' * len(line_prefix)}{indented_extra_line}")
-
-            for extra_type_key in ['vlees', 'bijgerecht']:
-                if extra_type_key in extras and extras[extra_type_key]:
-                    add_extra_display_line(extra_type_key.capitalize(), extras[extra_type_key])
-
-            saus_key = 'sauzen' if 'sauzen' in extras else 'saus'
-            if saus_key in extras and extras[saus_key]:
-                add_extra_display_line(saus_key.capitalize(), extras[saus_key])
-
-            if 'garnering' in extras and extras['garnering']:
-                add_extra_display_line("Garnering", extras['garnering'], is_garnering=True)
-
-        # Opmerkingen
+        # Opmerking
         if item.get('opmerking'):
-            opm_prefix = " " * ITEM_INDENT_WIDTH + "> Opm: "
-            max_opm_content_width = BON_WIDTH - len(opm_prefix)
-            opmerking_lines = wrap_text_for_bon(item['opmerking'], indent_len=0, total_width=max_opm_content_width)
+            details_lines.append(f"  > Opm: {item['opmerking']}")
 
-            if opmerking_lines:
-                details_output_lines.append(f"{opm_prefix}{opmerking_lines[0].ljust(max_opm_content_width)}")
-                for i in range(1, len(opmerking_lines)):
-                    details_output_lines.append(
-                        f"{' ' * len(opm_prefix)}{opmerking_lines[i].ljust(max_opm_content_width)}")
+    details_str = "\n".join(details_lines)
 
-        details_output_lines.append("-" * BON_WIDTH)
-
-    if details_output_lines and details_output_lines[-1] == "-" * BON_WIDTH:
-        details_output_lines.pop()
-
-    details_str = "\n".join(details_output_lines)
-
-    # --- 6. PRIJSTABEL ---
+    # ============ 5. TARIEF TABEL (als kolommen) ============
     if not isinstance(totaal, Decimal):
         totaal = Decimal(str(totaal))
 
-    basis_excl_btw = (totaal / Decimal('1.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    btw_amount = totaal - basis_excl_btw
+    basis = (totaal / Decimal('1.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    btw = totaal - basis
 
-    total_section_lines = []
-    total_section_lines.append("-" * BON_WIDTH)
-    # EURO TEKEN TOEGEVOEGD (was vraagteken)
-    total_section_lines.append(f"{'Tarief':<10}{'Basis':>{BON_WIDTH - 10}}")
-    total_section_lines.append(f"{'6%':<10}{f'€ {basis_excl_btw:.2f}'.replace('.', ','):>{BON_WIDTH - 10}}")
-    total_section_lines.append(f"{'BTW':<10}{f'€ {btw_amount:.2f}'.replace('.', ','):>{BON_WIDTH - 10}}")
-    total_section_lines.append("-" * BON_WIDTH)
+    # Maak een tabel met kolommen: Tarief | Basis | BTW | Totaal
+    tarief_lines = [
+        "",
+        "-" * BON_WIDTH,
+        f"{'':1s}{'Tarief':<10s}{'Basis':>10s}{'BTW':>10s}{'Totaal':>10s}",
+        f"{'C':1s}{'6%':<10s}{f'€ {basis:.2f}'.replace('.', ','):>10s}{f'€ {btw:.2f}'.replace('.', ','):>10s}{f'€ {totaal:.2f}'.replace('.', ','):>10s}",
+        f"{'':1s}{'':10s}{f'€ {basis:.2f}'.replace('.', ','):>10s}{f'€ {btw:.2f}'.replace('.', ','):>10s}{f'€ {totaal:.2f}'.replace('.', ','):>10s}",
+        ""
+    ]
 
-    total_header = ""
-    total_row = ""
+    tarief_str = "\n".join(tarief_lines)
 
-    details_str += "\n" + "\n".join(total_section_lines)
+    # ============ 6. TOTAAL (vet en groot) ============
+    totaal_label = "Totaal"  # Wordt groot/vet in print functie
+    totaal_waarde = f"€ {totaal:.2f}".replace('.', ',')
 
-    # --- 7. TE BETALEN (VET EN GROOT) ---
-    te_betalen_str = "TE BETALEN!"  # Wordt vet en groot geprint in print functie
+    # ============ 7. REEDS BETAALD ============
+    betaald_str = "REEDS BETAALD!"  # Wordt vet in print functie
 
-    # --- 8. TOTAALBEDRAG ---
-    totaal_bedrag_label = "Totaal: "
-    totaal_bedrag_value = f"€ {totaal:.2f}".replace('.', ',')
-    padding = BON_WIDTH - len(totaal_bedrag_label) - len(totaal_bedrag_value)
-    totaal_bedrag_str = f"{totaal_bedrag_label}{' ' * padding}{totaal_bedrag_value}"
-
-    # --- 9. FOOTER ---
+    # ============ 8. FOOTER ============
     footer_lines = [
         "",
-        "Eet smakelijk! Tot ziens!".center(BON_WIDTH),
-        "Di-Zo 17:00-20:30".center(BON_WIDTH),
+        "Eet smakelijk!".center(BON_WIDTH),
+        "Dank u en tot weerziens!".center(BON_WIDTH),
+        "Dins- tot Zon 17.00-20.30".center(BON_WIDTH),
         ""
     ]
     footer_str = "\n".join(footer_lines)
@@ -273,10 +185,10 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         info_str,
         address_str,
         details_str,
-        total_header,
-        total_row,
-        te_betalen_str,
-        totaal_bedrag_str,
+        tarief_str,
+        totaal_label,
+        totaal_waarde,
+        betaald_str,
         footer_str,
         address_for_qr,
         BON_WIDTH
