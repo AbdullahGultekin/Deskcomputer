@@ -167,7 +167,8 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     totaal_label = "Totaal"  # Wordt groot/vet in print functie
     totaal_waarde = f"€ {totaal:.2f}".replace('.', ',')
 
-
+    # ============ 7. TE BETALEN ============
+    betaald_str = "TE BETALEN!"  # Wordt vet in print functie
 
     # ============ 8. FOOTER ============
     footer_lines = [
@@ -187,6 +188,7 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         tarief_str,
         totaal_label,
         totaal_waarde,
+        betaald_str,
         footer_str,
         address_for_qr,
         BON_WIDTH
