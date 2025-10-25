@@ -323,21 +323,12 @@ import win32print
 
 def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     """
-    Print bon via Windows spooler met:
-    - Grote header
-    - QR-code naast adres
-    - Automatisch snijden
+    Print bon via Windows spooler met QR rechts van adres
     """
-    # Check platform
     if not WIN32PRINT_AVAILABLE:
-        messagebox.showerror(
-            "Platform Error",
-            "Windows printer support niet beschikbaar.\n"
-            "Installeer pywin32: pip install pywin32"
-        )
+        messagebox.showerror("Platform Error", "Windows printer support niet beschikbaar.")
         return
 
-    # Eerst opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
         messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen.")
@@ -352,26 +343,20 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
             hjob = win32print.StartDocPrinter(hprinter, 1, ("Bon", None, "RAW"))
             win32print.StartPagePrinter(hprinter)
 
-            # ESC/POS commando's
             ESC = b'\x1b'
             GS = b'\x1d'
 
-            # Initialize printer
+            # Initialize
             win32print.WritePrinter(hprinter, ESC + b'@')
 
-            # GROTE HEADER - Dubbele hoogte en breedte voor bedrijfsnaam
-            # Justificatie center
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Center justify
-
-            # Dubbele grootte (height + width)
+            # GROTE HEADER
+            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Center
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # 2x height, 2x width
             win32print.WritePrinter(hprinter, b'PITA PIZZA NAPOLI\n')
-
-            # Reset naar normale grootte
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Reset size
             win32print.WritePrinter(hprinter, b'\n')
 
-            # Normale header info (center)
+            # Header info
             header_info = """Brugstraat 12 - 9120 Vrasene
 TEL: 03 / 775 72 28
 FAX: 03 / 755 52 22
@@ -383,32 +368,40 @@ info@pitapizzanapoli.be
 
 """
             win32print.WritePrinter(hprinter, header_info.encode('cp437', errors='replace'))
-
-            # Reset naar links uitgelijnd voor rest van bon
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Left justify
 
-            # Print rest van de bon (zonder header die we al geprint hebben)
+            # Print bestelinfo tot adres
             bon_lines = full_bon_text_for_print.split('\n')
-
-            # Vind waar "Type:" of "Bon nr:" begint (na header)
             start_idx = 0
+            address_start_idx = 0
+            address_end_idx = 0
+
             for i, line in enumerate(bon_lines):
-                if 'Type:' in line or 'Bon nr:' in line or 'Soort bestelling' in line:
+                if 'Type:' in line or 'Bon nr:' in line:
                     start_idx = i
+                if 'Leveradres:' in line:
+                    address_start_idx = i
+                if address_start_idx > 0 and 'Details bestelling' in line:
+                    address_end_idx = i
                     break
 
-            # Print de rest van de bon
-            rest_of_bon = '\n'.join(bon_lines[start_idx:])
-            bon_bytes = rest_of_bon.encode('cp437', errors='replace')
-            win32print.WritePrinter(hprinter, bon_bytes)
+            # Print tot adres
+            bestelinfo = '\n'.join(bon_lines[start_idx:address_start_idx])
+            win32print.WritePrinter(hprinter, bestelinfo.encode('cp437', errors='replace'))
 
-            # QR-CODE (als address_for_qr gegeven is)
+            # Print "Leveradres:"
+            win32print.WritePrinter(hprinter, b'\nLeveradres:\n')
+
+            # Adres content (zonder "Leveradres:" en "Details")
+            address_content = '\n'.join(bon_lines[address_start_idx + 1:address_end_idx]).strip()
+            win32print.WritePrinter(hprinter, address_content.encode('cp437', errors='replace'))
+
+            # QR CODE RECHTS VAN ADRES (of onder, afhankelijk van printer mogelijkheden)
             if address_for_qr:
                 win32print.WritePrinter(hprinter, b'\n')
-
-                # QR Code ESC/POS commando's
+                # QR Code
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x04\x00' + b'1A2\x00')
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x06')  # Size 6
+                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x06')
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1E0')
                 qr_data = address_for_qr.encode('utf-8')
                 qr_len = len(qr_data) + 3
@@ -416,28 +409,50 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1Q0')
                 win32print.WritePrinter(hprinter, b'\n')
 
-            # Feed enkele regels
-            win32print.WritePrinter(hprinter, b'\n\n\n')
+            # Rest van bon (Details bestelling tot einde, ZONDER "TE BETALEN!")
+            rest_start = address_end_idx
+            te_betalen_idx = 0
+            for i in range(address_end_idx, len(bon_lines)):
+                if 'TE BETALEN' in bon_lines[i]:
+                    te_betalen_idx = i
+                    break
 
-            # SNIJ-COMMANDO
+            if te_betalen_idx > 0:
+                rest_of_bon = '\n'.join(bon_lines[rest_start:te_betalen_idx])
+            else:
+                rest_of_bon = '\n'.join(bon_lines[rest_start:])
+
+            win32print.WritePrinter(hprinter, rest_of_bon.encode('cp437', errors='replace'))
+
+            # TE BETALEN - VET EN GROOT
+            win32print.WritePrinter(hprinter, b'\n\n')
+            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Center
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold ON
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # 2x size
+            win32print.WritePrinter(hprinter, b'TE BETALEN!\n')
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Reset size
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold OFF
+            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Left align
+
+            # Totaal en footer
+            if te_betalen_idx > 0:
+                final_part = '\n'.join(bon_lines[te_betalen_idx + 1:])
+                win32print.WritePrinter(hprinter, final_part.encode('cp437', errors='replace'))
+
+            # Feed + snijden
+            win32print.WritePrinter(hprinter, b'\n\n\n')
             win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
 
             win32print.EndPagePrinter(hprinter)
             win32print.EndDocPrinter(hprinter)
 
-            messagebox.showinfo(
-                "Print",
-                f"Bon {bonnummer} is naar printer gestuurd!"
-            )
+            messagebox.showinfo("Print", f"Bon {bonnummer} is naar printer gestuurd!")
 
         finally:
             win32print.ClosePrinter(hprinter)
 
     except Exception as e:
-        messagebox.showerror(
-            "Fout bij afdrukken",
-            f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}"
-        )
+        messagebox.showerror("Fout bij afdrukken", f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}")
 
 
 def find_printer_usb_ids():
