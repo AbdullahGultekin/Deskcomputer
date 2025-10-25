@@ -42,7 +42,7 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         format_line("Bonnummer", bonnummer),
         format_line("Datum", nu.strftime('%d-%m-%Y')),
         format_line("Tijd", nu.strftime('%H:%M')),
-        format_line("Betaalmethode", "Bancontact / Mister Cash"),
+        format_line("Betaalmethode", "Cash"),
         "",
         format_line("Bezorgtijd", bezorgtijd),
         ""
@@ -96,11 +96,11 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         # Kortere afkortingen zoals in gewenste bon
         if 'pizza' in cat.lower():
             if 'small' in cat.lower():
-                prefix = "S"
+                prefix = "Small"
             elif 'medium' in cat.lower():
-                prefix = "M"
+                prefix = "Medium"
             elif 'large' in cat.lower():
-                prefix = "L"
+                prefix = "Large"
             else:
                 prefix = cat[:3]
         else:
@@ -167,8 +167,8 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     totaal_label = "Totaal"  # Wordt groot/vet in print functie
     totaal_waarde = f"€ {totaal:.2f}".replace('.', ',')
 
-    # ============ 7. REEDS BETAALD ============
-    betaald_str = "REEDS BETAALD!"  # Wordt vet in print functie
+    # ============ 7. TE BETALEN ============
+    betaald_str = "TE BETALEN!"  # Wordt vet in print functie
 
     # ============ 8. FOOTER ============
     footer_lines = [
