@@ -434,7 +434,7 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-                win32print.WritePrinter(hprinter, line.encode('cp1252', errors='replace'))
+                win32print.WritePrinter(hprinter, totaal_line.encode('cp1252', errors='replace'))  # <- CORRECT
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
