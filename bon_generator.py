@@ -93,19 +93,41 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         cat = item['categorie'].lower()
 
         prefix = ""
+
         if "small" in cat:
             prefix = "Small"
-        elif "medium" in cat:
+        if "medium" in cat:
             prefix = "Medium"
-        elif "large" in cat:
+        if "large" in cat:
             prefix = "Large"
-        elif any(x in cat for x in
-                 ('schotel', 'groot-broodjes', 'klein-broodjes', 'durum', 'turks-brood', 'pasta', 'kapsalon')):
-            prefix = cat.capitalize()
-        # DRANK, DESSERT etc: geen prefix
+        if "grote-broodjes" in cat:
+            prefix = "Groot Brood"
+        if "klein-broodjes" in cat:
+            prefix = "Klein Brood"
+        if "turks-brood" in cat:
+            prefix = "Turks Brood"
+        if "durum" in cat:
+            prefix = "Durum"
+        if "pasta" in cat:
+            prefix = "Pasta"
+        if "mix schotels" in cat:
+            prefix = "Mix Schotel"
+        if "schotel" in cat and "mix schotels" not in cat:
+            prefix = "Schotel"
+        if "kapsalon" in cat:
+            prefix = "Kapsalon"
 
-        # Alleen voor bepaalde categorieën tonen, anders alleen naam
-        if any(x in cat for x in ('Schotel', 'Groot Brood', 'Klein Brood', 'Durum', 'Turks Brood', 'Pizza')):
+        # fallback, voor categorie die nog niet specifiek gevangen is
+        if not prefix and any(x in cat for x in (
+                'schotel', 'groot-broodjes', 'klein-broodjes',
+                'durum', 'turks-brood', 'pasta', 'kapsalon')):
+            prefix = cat.capitalize()
+
+        # Alleen voor bepaalde categorieën tonen, anders enkel naam
+        if any(x in cat for x in (
+                'schotel', 'grote-broodjes', 'klein-broodjes',
+                'durum', 'turks-brood', 'pizza'
+        )):
             display_name = f"{prefix} {product_naam}".strip()
         else:
             display_name = product_naam.strip()
