@@ -100,24 +100,27 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         elif "large" in cat:
             prefix = "Large"
         elif any(x in cat for x in
-                 ('schotel', 'groot brood', 'klein brood', 'durum', 'turks brood', 'pasta', 'kapsalon')):
+                 ('schotel', 'groot-broodjes', 'klein-broodjes', 'durum', 'turks-brood', 'pasta', 'kapsalon')):
             prefix = cat.capitalize()
         # DRANK, DESSERT etc: geen prefix
 
         # Alleen voor bepaalde categorieën tonen, anders alleen naam
-        if any(x in cat for x in ('schotel', 'brood', 'durum', 'pizza')):
+        if any(x in cat for x in ('Schotel', 'Groot Brood', 'Klein Brood', 'Durum', 'Turks Brood', 'Pizza')):
             display_name = f"{prefix} {product_naam}".strip()
         else:
             display_name = product_naam.strip()
 
         qty = f"{aantal}x"
-        price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
+        price = f"€ {totaal_prijs:.2f}".replace('.', ',')
+        price = price.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€') + " C"
         name_max = BON_WIDTH - 4 - 12
         if len(display_name) > name_max:
             display_name = display_name[:name_max - 3] + "..."
 
         line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
-        details_lines.append(line.replace('?', '€'))
+        # Forceer ook hier in elk geval echte euro
+        line = line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€')
+        details_lines.append(line)
 
         # Extra's in bullets
         if item.get('extras'):
