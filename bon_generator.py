@@ -84,7 +84,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
 
     # ============ 4. DETAILS BESTELLING ============
     details_lines = ["Details bestelling"]
-
     for item in bestelregels:
         aantal = item['aantal']
         prijs_per_stuk = Decimal(str(item['prijs']))
@@ -93,7 +92,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         product_naam = item['product']
         cat = item['categorie'].lower()
 
-        # Prefix bepalen (small, medium, large, schotel, brood, etc.):
         prefix = ""
         if "small" in cat:
             prefix = "Small"
@@ -101,37 +99,29 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             prefix = "Medium"
         elif "large" in cat:
             prefix = "Large"
-        elif "schotel" in cat:
-            prefix = "Schotel"
-        elif "groot brood" in cat:
-            prefix = "Groot brood"
-        elif "klein brood" in cat:
-            prefix = "Klein brood"
-        elif "turks brood" in cat:
-            prefix = "Turks brood"
-        elif "durum" in cat:
-            prefix = "Durum"
-        else:
-            prefix = ""
+        elif any(x in cat for x in
+                 ('schotel', 'groot brood', 'klein brood', 'durum', 'turks brood', 'pasta', 'kapsalon')):
+            prefix = cat.capitalize()
+        # DRANK, DESSERT etc: geen prefix
 
-        display_name = f"{prefix} {product_naam}".strip()
+        # Alleen voor bepaalde categorieën tonen, anders alleen naam
+        if any(x in cat for x in ('schotel', 'brood', 'durum', 'pizza')):
+            display_name = f"{prefix} {product_naam}".strip()
+        else:
+            display_name = product_naam.strip()
 
         qty = f"{aantal}x"
         price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
-
-        # Max breedte = BON_WIDTH - qty - price
         name_max = BON_WIDTH - 4 - 12
         if len(display_name) > name_max:
             display_name = display_name[:name_max - 3] + "..."
 
-        # Hoofdregel product
         line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
-        details_lines.append(line)
+        details_lines.append(line.replace('?', '€'))
 
-        # Extras zonder label, bullet per item (ook voor half-half toppings)
+        # Extra's in bullets
         if item.get('extras'):
             extras = item['extras']
-            # Flats list van alle extras
             flat_extras = []
             for key in ['vlees', 'bijgerecht', 'saus', 'sauzen', 'garnering']:
                 if key in extras and extras[key]:
@@ -142,16 +132,16 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
                         flat_extras.append(val)
             for extra in flat_extras:
                 details_lines.append(f"> {extra}")
-
-            # Pasta extras (indien aanwezig)
             if 'pasta_extras' in extras:
                 for extra in extras['pasta_extras']:
                     details_lines.append(f"> {extra.upper()}")
 
-        # Opm
+        # Opmerking
         if item.get('opmerking'):
             details_lines.append(f"> {item['opmerking']}")
 
+    details_lines.append('-' * BON_WIDTH)
+    details_lines.append(f"Totaal{'':<{BON_WIDTH - 18}}€ {totaal:.2f}".replace('.', ',').replace('?', '€'))
     details_str = "\n".join(details_lines)
 
     # ============ 5. TARIEF TABEL (als kolommen) ============
