@@ -427,14 +427,19 @@ info@pitapizzanapoli.be
             totaal_line = ""
             for i in range(len(bon_lines) - 1, -1, -1):
                 if 'Totaal' in bon_lines[i] and '€' in bon_lines[i]:
-                    totaal_line = bon_lines[i].replace('?', '€')
+                    totaal_line = bon_lines[i]
                     break
+
             if totaal_line:
+                # Zorg dat het euroteken daadwerkelijk een unicode karakter is
+                # Vervang fallback-encoded eurotekens en vraagtekens
+                totaal_line = totaal_line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€')
+
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-                win32print.WritePrinter(hprinter, totaal_line.encode('cp1252', errors='replace'))  # <- CORRECT
+                win32print.WritePrinter(hprinter, totaal_line.encode('cp1252', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
