@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, Toplevel, scrolledtext, ttk, simpledialog
 from PIL import Image
+from escpos.printer import Usb
 import json
 import qrcode
 import random
@@ -8,7 +9,6 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-# import win32print
 import database
 import tempfile
 import subprocess
@@ -22,31 +22,32 @@ from modules.klant_management import open_klant_management
 from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
-from modules.bon_viewer import open_bon_viewer
-import sys
-import platform
+from modules.bon_viewer import open_bon_viewer  # <-- NIEUW: Importeer de bon_viewer
+import usb.core
 
-# ============ WINDOWS PRINT SUPPORT ============
-# Conditionele import voor Windows-only modules
-if platform.system() == "Windows":
-    try:
-        import win32print
+# Zet hier je exacte Vendor en Product ID
+VENDOR_ID = 0x04b8
+PRODUCT_ID = 0x0e15
 
-        WIN32PRINT_AVAILABLE = True
-    except ImportError:
-        WIN32PRINT_AVAILABLE = False
-        print("Waarschuwing: pywin32 niet geïnstalleerd. Windows printer support niet beschikbaar.")
-else:
-    WIN32PRINT_AVAILABLE = False
-    print("Info: win32print is alleen beschikbaar op Windows.")
 
-# Voeg toe bij je andere imports bovenaan (VEROUDERD - NIET MEER NODIG)
-# try:
-#     from escpos.printer import Usb
-#     ESCPOS_AVAILABLE = True
-# except ImportError:
-#     ESCPOS_AVAILABLE = False
-#     print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
+def check_usb_epson():
+    dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+    if dev is not None:
+        print("EPSON USB-printer gevonden:", dev)
+    else:
+        print("EPSON USB-printer NIET gevonden!")
+
+
+check_usb_epson()
+
+# Voeg toe bij je andere imports bovenaan
+try:
+    from escpos.printer import Usb
+
+    ESCPOS_AVAILABLE = True
+except ImportError:
+    ESCPOS_AVAILABLE = False
+    print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
 EXTRAS = {}
@@ -319,167 +320,24 @@ def bestelling_opslaan():
         conn.close()
 
 
-def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
-    import re
-    if not WIN32PRINT_AVAILABLE:
-        messagebox.showerror("Platform Error", "Windows printer support niet beschikbaar.")
-        return
-
+def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr):
+    # Eerst bestelling opslaan
     success, bonnummer = bestelling_opslaan()
     if not success:
-        messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen.")
+        messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen. Afdruk geannuleerd.")
         return
-
-    printer_name = "EPSON TM-T20II Receipt5"
-
     try:
-        hprinter = win32print.OpenPrinter(printer_name)
-        try:
-            hjob = win32print.StartDocPrinter(hprinter, 1, ("Bon", None, "RAW"))
-            win32print.StartPagePrinter(hprinter)
-            ESC = b'\x1b'
-            GS = b'\x1d'
-
-            # Header
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')
-            win32print.WritePrinter(hprinter, b'PITA PIZZA NAPOLI\n')
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
-            win32print.WritePrinter(hprinter, b'\n')
-
-            header_info = """Brugstraat 12 - 9120 Vrasene
-TEL: 03 / 775 72 28
-FAX: 03 / 755 52 22
-BTW: BE 0479.048.950
-
-Bestel online
-www.pitapizzanapoli.be
-info@pitapizzanapoli.be
-
-"""
-            win32print.WritePrinter(hprinter, header_info.encode('cp437', errors='replace'))
-
-            bon_lines = full_bon_text_for_print.split('\n')
-            bonnummer_idx = bezorgtijd_idx = address_idx = dhr_mvr_idx = details_idx = 0
-            for i, line in enumerate(bon_lines):
-                if 'Bonnummer' in line: bonnummer_idx = i
-                if 'Bezorgtijd:' in line: bezorgtijd_idx = i
-                if 'Leveringsadres:' in line: address_idx = i
-                if ('Dhr.' in line or 'Mvr.' in line): dhr_mvr_idx = i
-                if 'Details bestelling' in line: details_idx = i; break
-
-            # Bestelinfo printen, tot bezorgtijd
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-            win32print.WritePrinter(hprinter, '\n'.join(bon_lines[bonnummer_idx:bezorgtijd_idx]).encode('cp437',
-                                                                                                        errors='replace'))
-
-            # Bezorgtijd vet drukken
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-            win32print.WritePrinter(hprinter, bon_lines[bezorgtijd_idx].encode('cp437', errors='replace'))
-            win32print.WritePrinter(hprinter, b'\n')
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
-            win32print.WritePrinter(hprinter, b'\n')
-
-            # Adres sectie
-            win32print.WritePrinter(hprinter, b'Leveringsadres:\n')
-            adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
-            address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
-            for addr_line in address_content:
-                win32print.WritePrinter(hprinter, addr_line.encode('cp437', errors='replace'))
-                win32print.WritePrinter(hprinter, b'\n')
-            if dhr_mvr_idx > 0 and details_idx > 0:
-                win32print.WritePrinter(hprinter, b'\n')
-                naam_section = '\n'.join(bon_lines[dhr_mvr_idx:details_idx])
-                naam_lines = [l for l in naam_section.split('\n') if l.strip()]
-                if naam_lines:
-                    win32print.WritePrinter(hprinter, '\n'.join(naam_lines).encode('cp437', errors='replace'))
-                    win32print.WritePrinter(hprinter, b'\n')
-
-            # Bestel-details met tussen elk product een lijn (maar géén dubbele totalen of "te betalen")
-            if details_idx > 0:
-                details_end_idx = len(bon_lines)
-                for i in range(details_idx, len(bon_lines)):
-                    if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
-                        details_end_idx = i
-                        break
-                win32print.WritePrinter(hprinter, b'Details bestelling\n')
-                win32print.WritePrinter(hprinter, b'-' * 42 + b'\n')
-                current_item_lines = []
-                for line in bon_lines[details_idx + 1:details_end_idx]:
-                    # PRODUCTREGEL
-                    if line.strip() and (line.strip()[0].isdigit() and 'x' in line[:5]):
-                        if current_item_lines:
-                            item_text = '\n'.join(current_item_lines).replace('?', '€')
-                            win32print.WritePrinter(hprinter, item_text.encode('cp437', errors='replace'))
-                            win32print.WritePrinter(hprinter, b'\n' + b'-' * 42 + b'\n')
-                            current_item_lines = []
-                        current_item_lines.append(line.replace('?', '€'))
-                    else:
-                        # GEEN 'TE BETALEN!' printen!
-                        if "TE BETALEN" in line: continue
-                        current_item_lines.append(line.replace('?', '€'))
-                if current_item_lines:
-                    item_text = '\n'.join(current_item_lines).replace('?', '€')
-                    win32print.WritePrinter(hprinter, item_text.encode('cp437', errors='replace'))
-                    win32print.WritePrinter(hprinter, b'\n')
-
-            # Enkel de laatste "Totaal" met € printen en vet/groter/aan rechterkant (center)
-            totaal_line = ""
-            for i in range(len(bon_lines) - 1, -1, -1):
-                if 'Totaal' in bon_lines[i] and '€' in bon_lines[i]:
-                    totaal_line = bon_lines[i].replace('?', '€')
-                    break
-            if totaal_line:
-                win32print.WritePrinter(hprinter, b'\n')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-                win32print.WritePrinter(hprinter, totaal_line.encode('cp437', errors='replace'))
-                win32print.WritePrinter(hprinter, b'\n')
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-            # GEEN "Eet smakelijk!" dubbel! Eénmaal centraal onder de totaalregel
-            footer = """
-"""
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-            win32print.WritePrinter(hprinter, footer.encode('cp437', errors='replace'))
-
-            # Centered grote "TE BETALEN!" onder QR
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-            win32print.WritePrinter(hprinter, b'TE BETALEN!\n')
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-            # QR code gecentreerd, helemaal onderaan
-            if address_for_qr:
-                win32print.WritePrinter(hprinter, b'\n')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x04\x00' + b'1A2\x00')
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1C\x06')
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1E0')
-                qr_data = address_for_qr.encode('utf-8')
-                qr_len = len(qr_data) + 3
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + qr_len.to_bytes(2, 'little') + b'1P0' + qr_data)
-                win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1Q0')
-                win32print.WritePrinter(hprinter, b'\n')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-
-
-            win32print.WritePrinter(hprinter, b'\n\n\n')
-            win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
-            win32print.EndPagePrinter(hprinter)
-            win32print.EndDocPrinter(hprinter)
-            messagebox.showinfo("Print", f"Bon {bonnummer} is naar printer gestuurd!")
-        finally:
-            win32print.ClosePrinter(hprinter)
+        # Dit print de bon én de QR via USB/ESC/POS
+        print_bon_with_qr(full_bon_text_for_print, address_for_qr)
+        messagebox.showinfo(
+            "Print",
+            f"Bon {bonnummer} is naar de thermische printer gestuurd. Controleer de bon!"
+        )
     except Exception as e:
-        messagebox.showerror("Fout bij afdrukken", f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}")
+        messagebox.showerror(
+            "Fout bij afdrukken",
+            f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}"
+        )
 
 
 def find_printer_usb_ids():
@@ -620,18 +478,11 @@ def render_opties(product):
     # Creëer een nieuw Toplevel venster voor de productopties
     options_window = tk.Toplevel(root)
     options_window.title(f"Opties voor {product['naam']}")
-    options_window.transient(root)
-    options_window.grab_set()
-    # Stel vaste grootte en positie in:
-    width = 600
-    height = 650
-    # Het venster centreren op het scherm — berekenen van positie midden scherm
-    screen_width = options_window.winfo_screenwidth()
-    screen_height = options_window.winfo_screenheight()
-    x = (screen_width // 2) - (width // 2)
-    y = (screen_height // 2) - (height // 2)
-    options_window.geometry(f"{width}x{height}+{x}+{y}")
+    options_window.transient(root)  # Zorgt ervoor dat het pop-up venster boven het hoofdvenster blijft
+    options_window.grab_set()  # Maakt het venster modaal (blokkeert interactie met het hoofdvenster)
+    options_window.geometry("550x600")  # Stel een standaardgrootte in
     options_window.resizable(True, True)
+
     # Dwing Tkinter om het venster te updaten zodat winfo_width() een correcte waarde geeft
     options_window.update_idletasks()
 

@@ -91,56 +91,66 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         totaal_prijs = prijs_per_stuk * aantal
 
         product_naam = item['product']
-        cat = item['categorie'].upper()
+        cat = item['categorie'].lower()
 
-        # Kortere afkortingen zoals in gewenste bon
-        if 'pizza' in cat.lower():
-            if 'small' in cat.lower():
-                prefix = "Small"
-            elif 'medium' in cat.lower():
-                prefix = "Medium"
-            elif 'large' in cat.lower():
-                prefix = "Large"
-            else:
-                prefix = cat[:3]
+        # Prefix bepalen (small, medium, large, schotel, brood, etc.):
+        prefix = ""
+        if "small" in cat:
+            prefix = "Small"
+        elif "medium" in cat:
+            prefix = "Medium"
+        elif "large" in cat:
+            prefix = "Large"
+        elif "schotel" in cat:
+            prefix = "Schotel"
+        elif "groot brood" in cat:
+            prefix = "Groot brood"
+        elif "klein brood" in cat:
+            prefix = "Klein brood"
+        elif "turks brood" in cat:
+            prefix = "Turks brood"
+        elif "durum" in cat:
+            prefix = "Durum"
         else:
-            prefix = cat.replace(" ", "").replace("-", "")[:10]
+            prefix = ""
 
-        display_name = f"{prefix} {product_naam}"
+        display_name = f"{prefix} {product_naam}".strip()
 
-        # Hoofdregel: aantal + naam + prijs
         qty = f"{aantal}x"
         price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
 
-        # Naam maximaal BON_WIDTH - qty (4) - price (12) = 26 chars
+        # Max breedte = BON_WIDTH - qty - price
         name_max = BON_WIDTH - 4 - 12
         if len(display_name) > name_max:
             display_name = display_name[:name_max - 3] + "..."
 
+        # Hoofdregel product
         line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
         details_lines.append(line)
 
-        # Extras met ">"
+        # Extras zonder label, bullet per item (ook voor half-half toppings)
         if item.get('extras'):
             extras = item['extras']
-
+            # Flats list van alle extras
+            flat_extras = []
             for key in ['vlees', 'bijgerecht', 'saus', 'sauzen', 'garnering']:
                 if key in extras and extras[key]:
                     val = extras[key]
                     if isinstance(val, list):
-                        for v in val:
-                            details_lines.append(f"  > {key.capitalize()}: {v}")
+                        flat_extras.extend(val)
                     else:
-                        details_lines.append(f"  > {key.capitalize()}: {val}")
+                        flat_extras.append(val)
+            for extra in flat_extras:
+                details_lines.append(f"> {extra}")
 
-            # Pasta extra's als + formaat
+            # Pasta extras (indien aanwezig)
             if 'pasta_extras' in extras:
                 for extra in extras['pasta_extras']:
-                    details_lines.append(f"  + {extra.upper()}")
+                    details_lines.append(f"> {extra.upper()}")
 
-        # Opmerking
+        # Opm
         if item.get('opmerking'):
-            details_lines.append(f"  > Opm: {item['opmerking']}")
+            details_lines.append(f"> {item['opmerking']}")
 
     details_str = "\n".join(details_lines)
 
