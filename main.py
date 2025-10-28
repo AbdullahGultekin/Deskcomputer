@@ -546,23 +546,29 @@ info@pitapizzanapoli.be
                     win32print.WritePrinter(hprinter, b'\n')
 
             # Enkel de laatste "Totaal" met € printen en vet/groter/aan rechterkant (center)
+            ESC = b'\x1B'
+            GS = b'\x1D'
             totaal_line = ""
             for i in range(len(bon_lines) - 1, -1, -1):
-                if 'Totaal' in bon_lines[i] and '€' in bon_lines[i]:
+                if 'Totaal' in bon_lines[i] and ('€' in bon_lines[i] or '?' in bon_lines[i]):
                     totaal_line = bon_lines[i]
                     break
 
             if totaal_line:
-                # Zorg dat het euroteken daadwerkelijk een unicode karakter is
-                # Vervang fallback-encoded eurotekens en vraagtekens
+                # Euroteken corrigeren: Unicode, fallback bytes en vraagtekens omzetten
                 totaal_line = totaal_line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€')
 
                 win32print.WritePrinter(hprinter, b'\n')
+                # Centreren ESC a 01
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
+                # Vet ESC E 01
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
+                # Tekengrootte dubbel GS ! 01
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-                win32print.WritePrinter(hprinter, totaal_line.encode('cp1252', errors='replace'))
+                # Gebruik cp858 als codepage voor correcte euro (indien nodig cp1252 testen)
+                win32print.WritePrinter(hprinter, totaal_line.encode('cp858', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
+                # Reset tekstgrootte/uitlijning/vet
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
@@ -573,13 +579,28 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, footer.encode('cp437', errors='replace'))
 
-            # Centered grote "TE BETALEN!" onder QR
+            ESC = b'\x1B'
+            GS = b'\x1D'
+
+            # Centered, grote/vette "TE BETALEN!"
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
             win32print.WritePrinter(hprinter, b'TE BETALEN!\n')
+
+            # Reset grootte/vet, blijven gecentreerd
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
+
+            # Centraal en vet "Eet smakelijk"
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
+            win32print.WritePrinter(hprinter, b'Eet smakelijk\n')
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
+
+            # Centraal openingsuren, onder "Eet smakelijk"
+            win32print.WritePrinter(hprinter, b'Van Dins- tot Zon van 17 u Tot 20u30\n')
+
+            # Reset uitlijning
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
 
             # QR code gecentreerd, helemaal onderaan
@@ -595,8 +616,6 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, GS + b'(' + b'k' + b'\x03\x00' + b'1Q0')
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-
 
             win32print.WritePrinter(hprinter, b'\n\n\n')
             win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
