@@ -740,7 +740,7 @@ def render_opties(product):
     options_window.grab_set()
     # Stel vaste grootte en positie in:
     width = 600
-    height = 650
+    height = 700
     # Het venster centreren op het scherm — berekenen van positie midden scherm
     screen_width = options_window.winfo_screenwidth()
     screen_height = options_window.winfo_screenheight()
