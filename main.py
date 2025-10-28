@@ -492,46 +492,57 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, b'\n')
 
             # Adres sectie
-            win32print.WritePrinter(hprinter, b'Leveringsadres:\n')
-            adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
-            address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
-            for addr_line in address_content:
-                win32print.WritePrinter(hprinter, addr_line.encode('cp437', errors='replace'))
-                win32print.WritePrinter(hprinter, b'\n')
+            win32print.WritePrinter(hprinter, 'Leveringsadres:\n'.encode('cp858'))
+
+            # Naamregel eerst tonen
             if dhr_mvr_idx > 0 and details_idx > 0:
-                win32print.WritePrinter(hprinter, b'\n')
                 naam_section = '\n'.join(bon_lines[dhr_mvr_idx:details_idx])
                 naam_lines = [l for l in naam_section.split('\n') if l.strip()]
                 if naam_lines:
-                    win32print.WritePrinter(hprinter, '\n'.join(naam_lines).encode('cp437', errors='replace'))
+                    win32print.WritePrinter(hprinter, '\n'.join(naam_lines).encode('cp858'))
                     win32print.WritePrinter(hprinter, b'\n')
 
+            # Daarna het adres (zoals je nu doet)
+            adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
+            address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
+            for addr_line in address_content:
+                win32print.WritePrinter(hprinter, addr_line.encode('cp858', errors='replace'))
+                win32print.WritePrinter(hprinter, b'\n')
+
             # Bestel-details met tussen elk product een lijn (maar géén dubbele totalen of "te betalen")
+            # Selecteer CP858 voor eurocompatibiliteit
+            win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # 0x13 = CP858, voor veel printers
+
             if details_idx > 0:
                 details_end_idx = len(bon_lines)
                 for i in range(details_idx, len(bon_lines)):
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
                         break
-                win32print.WritePrinter(hprinter, b'Details bestelling\n')
-                win32print.WritePrinter(hprinter, b'-' * 42 + b'\n')
+                win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
+                win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
-                    # PRODUCTREGEL
-                    if line.strip() and (line.strip()[0].isdigit() and 'x' in line[:5]):
+                    stripped_line = line.strip()
+                    # PRODUCTREGEL: nieuwe hoofdregel, begint met 'x'
+                    if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
+                        # Print vorig productblok (met extras etc. netjes onder het hoofdproduct)
                         if current_item_lines:
-                            item_text = '\n'.join(current_item_lines).replace('?', '€')
-                            win32print.WritePrinter(hprinter, item_text.encode('cp437', errors='replace'))
-                            win32print.WritePrinter(hprinter, b'\n' + b'-' * 42 + b'\n')
+                            win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
+                            win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
                             current_item_lines = []
+                        # Hoofdproductregel zonder pijl of inspringing
                         current_item_lines.append(line.replace('?', '€'))
                     else:
-                        # GEEN 'TE BETALEN!' printen!
-                        if "TE BETALEN" in line: continue
-                        current_item_lines.append(line.replace('?', '€'))
+                        # Geen 'TE BETALEN!' in details
+                        if "TE BETALEN" in line:
+                            continue
+                        # Extras e.d. netjes inspringen
+                        if stripped_line:
+                            current_item_lines.append(f"> {stripped_line}")
+                # Print het laatste productblok
                 if current_item_lines:
-                    item_text = '\n'.join(current_item_lines).replace('?', '€')
-                    win32print.WritePrinter(hprinter, item_text.encode('cp437', errors='replace'))
+                    win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
                     win32print.WritePrinter(hprinter, b'\n')
 
             # Enkel de laatste "Totaal" met € printen en vet/groter/aan rechterkant (center)
