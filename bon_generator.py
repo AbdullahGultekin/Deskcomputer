@@ -91,7 +91,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
 
         product_naam = item['product']
         cat = item['categorie'].lower()
-
         prefix = ""
 
         if "small" in cat:
@@ -110,21 +109,18 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             prefix = "Durum"
         if "pasta" in cat:
             prefix = "Pasta"
-        if "mix schotels" in cat:
-            prefix = "Mix Schotel"
-        if "schotel" in cat and "mix schotels" not in cat:
+        if "schotel" in cat and "mix schotel" not in cat:
             prefix = "Schotel"
         if "kapsalon" in cat:
             prefix = "Kapsalon"
 
-        # fallback, voor categorie die nog niet specifiek gevangen is
-        if not prefix and any(x in cat for x in (
-                'schotel', 'groot-broodjes', 'klein-broodjes',
-                'durum', 'turks-brood', 'pasta', 'kapsalon')):
-            prefix = cat.capitalize()
+        # Bepaal of het een mix schotel is
+        is_mixschotel = "mix schotel" in cat or "mix-schotel" in cat or "mixschotel" in cat
 
-        # Alleen voor bepaalde categorieën tonen, anders enkel naam
-        if any(x in cat for x in (
+        # ENKEL hier display_name toewijzen:
+        if is_mixschotel:
+            display_name = product_naam.strip()
+        elif any(x in cat for x in (
                 'schotel', 'grote-broodjes', 'klein-broodjes',
                 'durum', 'turks-brood', 'pizza'
         )):
@@ -133,15 +129,18 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             display_name = product_naam.strip()
 
         qty = f"{aantal}x"
-        price = f"€ {totaal_prijs:.2f}".replace('.', ',')
-        price = price.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€') + " C"
+        price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
+        # Fix alle euro-gerelateerde tekens of vraagtekens in de prijs
+        price = price.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€', 1)
+
         name_max = BON_WIDTH - 4 - 12
         if len(display_name) > name_max:
             display_name = display_name[:name_max - 3] + "..."
 
         line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
-        # Forceer ook hier in elk geval echte euro
-        line = line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€')
+        # Forceer ook hier in elk geval echte euro (voor de zekerheid)
+        line = line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€', 1)
+
         details_lines.append(line)
 
         # Extra's in bullets

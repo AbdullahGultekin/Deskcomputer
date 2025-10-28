@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, Toplevel, scrolledtext, ttk, simpledialog
 from PIL import Image
+import tkinter as tk
 import json
 import qrcode
 import random
@@ -25,6 +26,7 @@ from modules.voorraad import open_voorraad
 from modules.bon_viewer import open_bon_viewer
 import sys
 import platform
+from database import get_db_connection
 
 # ============ WINDOWS PRINT SUPPORT ============
 # Conditionele import voor Windows-only modules
@@ -49,6 +51,95 @@ else:
 #     print("Waarschuwing: python-escpos niet geïnstalleerd. Thermisch printen niet beschikbaar.")
 
 # Globale variabelen initialisatie (niet-Tkinter gerelateerd)
+
+def vul_klantgegevens_automatisch():
+    telefoon = telefoon_entry.get().strip()
+    if not telefoon:
+        return
+
+    conn = database.get_db_connection()
+    klant = conn.execute("SELECT * FROM klanten WHERE telefoon = ?", (telefoon,)).fetchone()
+    conn.close()
+
+    if klant:
+        naam_entry.delete(0, tk.END)
+        naam_entry.insert(0, klant['naam'] or "")
+        adres_entry.delete(0, tk.END)
+        adres_entry.insert(0, klant['straat'] or "")
+        nr_entry.delete(0, tk.END)
+        nr_entry.insert(0, klant['huisnummer'] or "")
+
+        plaats = klant['plaats'] or ""
+        gevonden_postcode = ""
+        for p in postcodes:
+            if plaats in p:
+                gevonden_postcode = p
+                break
+        postcode_var.set(gevonden_postcode if gevonden_postcode else postcodes[0])
+    else:
+        naam_entry.delete(0, tk.END)
+        adres_entry.delete(0, tk.END)
+        nr_entry.delete(0, tk.END)
+        postcode_var.set(postcodes[0])
+
+
+# 1x laden!
+with open("straatnamen.json", "r", encoding="utf-8") as f:
+    straatnamen = json.load(f)
+
+
+def suggest_straat(zoekterm):
+    zoekterm = zoekterm.lower().strip()
+    return [naam for naam in straatnamen if zoekterm in naam.lower()]
+
+
+def on_adres_entry(event):
+    typed_str = adres_entry.get()
+    lb_suggesties.delete(0, tk.END)
+    suggesties = suggest_straat(typed_str)
+    if suggesties:
+        for s in suggesties:
+            lb_suggesties.insert(tk.END, s)
+        lb_suggesties.grid()
+    else:
+        lb_suggesties.grid_remove()
+
+
+def selectie_suggestie(event):
+    if lb_suggesties.curselection():
+        keuze = lb_suggesties.get(lb_suggesties.curselection())
+        adres_entry.delete(0, tk.END)
+        adres_entry.insert(0, keuze)
+        lb_suggesties.grid_remove()
+
+
+def suggest_postcode(zoekterm):
+    zoekterm = zoekterm.strip().lower()
+    return [pc for pc, plaats in postcodes.items()
+            if zoekterm in pc.lower() or zoekterm in plaats.lower()]
+
+
+def voeg_adres_toe(straat, postcode, gemeente):
+    from database import get_db_connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO adressen (straat, postcode, gemeente) VALUES (?, ?, ?)",
+        (straat, postcode, gemeente)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_straatnamen_json(nieuwe_straat, json_path="straatnamen.json"):
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if nieuwe_straat not in data:
+        data.append(nieuwe_straat)
+        with open(json_path, "w", encoding="utf-8") as f2:
+            json.dump(data, f2, ensure_ascii=False, indent=2)
+
+
 EXTRAS = {}
 menu_data = {}
 app_settings = {}
@@ -238,6 +329,28 @@ def _get_current_order_data():
     return klant_data, list(bestelregels), temp_bonnummer
 
 
+def voeg_klant_toe_of_update(telefoon, adres, nr, postcode_plaats, naam):
+    if not telefoon:
+        return
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM klanten WHERE telefoon = ?", (telefoon,))
+    bestaande_klant = cursor.fetchone()
+    if bestaande_klant:
+        # Update altijd het actuele adres, nr, naam en plaats!
+        cursor.execute(
+            "UPDATE klanten SET straat = ?, huisnummer = ?, plaats = ?, naam = ? WHERE telefoon = ?",
+            (adres, nr, postcode_plaats, naam, telefoon)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO klanten (telefoon, straat, huisnummer, plaats, naam) VALUES (?, ?, ?, ?, ?)",
+            (telefoon, adres, nr, postcode_plaats, naam)
+        )
+    conn.commit()
+    conn.close()
+
+
 # REFACtORED: bestelling_opslaan zal nu alleen opslaan en de UI opschonen, NIET direct printen of preview tonen
 def bestelling_opslaan():
     global bestelregels
@@ -247,15 +360,13 @@ def bestelling_opslaan():
         return False, None  # Geef aan dat opslaan mislukt is en geen bontekst
 
     telefoon = klant_data["telefoon"]
-    klant_naam_of_opmerking = ctrl["opmerking"].get() if ctrl[
-        "opmerking"].get() else telefoon
-
-    voeg_klant_toe_indien_nodig(
+    naam = naam_entry.get().strip() if 'naam_entry' in globals() else ctrl["opmerking"].get()
+    voeg_klant_toe_of_update(
         telefoon=klant_data["telefoon"],
         adres=klant_data["adres"],
         nr=klant_data["nr"],
         postcode_plaats=klant_data["postcode_gemeente"],
-        naam_of_opmerking=klant_naam_of_opmerking
+        naam=naam
     )
 
     conn = database.get_db_connection()
@@ -1181,41 +1292,57 @@ main_frame.pack(fill=tk.BOTH, expand=True)
 
 klant_frame = tk.LabelFrame(main_frame, text="Klantgegevens", padx=10, pady=10)
 klant_frame.pack(fill=tk.X, pady=(0, 10))
-
 tel_adres_frame = tk.Frame(klant_frame)
 tel_adres_frame.pack(fill=tk.X)
+
+tk.Label(tel_adres_frame, text="Telefoon:").grid(row=0, column=0, sticky="w", padx=(0, 5))
 telefoon_entry = tk.Entry(tel_adres_frame, width=15)
 telefoon_entry.grid(row=0, column=1, sticky="w")
-tk.Label(tel_adres_frame, text="Telefoon:").grid(row=0, column=0, sticky="w", padx=(0, 5))
-tk.Button(tel_adres_frame, text="Zoek",
-          command=lambda: open_klanten_zoeken(root, telefoon_entry, adres_entry, nr_entry, postcode_var, postcodes),
-          padx=5).grid(row=0, column=2, sticky="w", padx=(2, 15))
+telefoon_entry.bind("<Return>", lambda e: vul_klantgegevens_automatisch())
+telefoon_entry.bind("<FocusOut>", lambda e: vul_klantgegevens_automatisch())
 
-tk.Label(tel_adres_frame, text="Adres:").grid(row=0, column=3, sticky="w", padx=(0, 5))
+# Optioneel NAAM veld toegevoegd
+tk.Label(tel_adres_frame, text="Naam:").grid(row=0, column=2, sticky="w", padx=(0, 5))
+naam_entry = tk.Entry(tel_adres_frame, width=17)
+naam_entry.grid(row=0, column=3, sticky="w", padx=(0, 10))
+
+tk.Button(tel_adres_frame, text="Zoek",
+          command=lambda: open_klanten_zoeken(root, telefoon_entry, naam_entry, adres_entry, nr_entry, postcode_var,
+                                              postcodes),
+          padx=5).grid(row=0, column=4, sticky="w", padx=(2, 15))
+
+# Adres, nr schuiven op (was col 3 en 4)
+tk.Label(tel_adres_frame, text="Adres:").grid(row=0, column=5, sticky="w", padx=(0, 5))
 adres_entry = tk.Entry(tel_adres_frame, width=25)
-adres_entry.grid(row=0, column=4, sticky="w", padx=(0, 15))
-tk.Label(tel_adres_frame, text="Nr:").grid(row=0, column=5, sticky="w", padx=(0, 5))
+adres_entry.grid(row=0, column=6, sticky="w", padx=(0, 15))
+adres_entry.bind("<KeyRelease>", on_adres_entry)
+
+# Suggestie-listbox direct onder adres_entry
+lb_suggesties = tk.Listbox(tel_adres_frame, height=4, width=28)
+lb_suggesties.grid(row=1, column=6, sticky="w", padx=(0, 15))
+lb_suggesties.bind("<<ListboxSelect>>", selectie_suggestie)
+lb_suggesties.grid_remove()
+
+tk.Label(tel_adres_frame, text="Nr:").grid(row=0, column=7, sticky="w", padx=(0, 5))
 nr_entry = tk.Entry(tel_adres_frame, width=5)
-nr_entry.grid(row=0, column=6, sticky="w")
+nr_entry.grid(row=0, column=8, sticky="w")
 
 postcode_opmerking_frame = tk.Frame(klant_frame)
 postcode_opmerking_frame.pack(fill=tk.X, pady=(10, 0))
-tk.Label(postcode_opmerking_frame, text="Postcode/Gemeente:").grid(row=0, column=0,
-
-                                                                   sticky="w",
-                                                                   padx=(0, 5))
+tk.Label(postcode_opmerking_frame, text="Postcode/Gemeente:").grid(row=0, column=0, sticky="w", padx=(0, 5))
 postcode_var = tk.StringVar(master=root)
 postcode_var.set(postcodes[0])
 postcode_optionmenu = tk.OptionMenu(postcode_opmerking_frame, postcode_var, *postcodes)
 postcode_optionmenu.config(width=20)
 postcode_optionmenu.grid(row=0, column=1, sticky="w", padx=(0, 15))
-tk.Label(postcode_opmerking_frame, text="Opmerking:").grid(row=0, column=2, sticky="w",
-                                                           padx=(0, 5))
+tk.Label(postcode_opmerking_frame, text="Opmerking:").grid(row=0, column=2, sticky="w", padx=(0, 5))
 opmerkingen_entry = tk.Entry(postcode_opmerking_frame, width=30)
 opmerkingen_entry.grid(row=0, column=3, sticky="we")
 postcode_opmerking_frame.grid_columnconfigure(3, weight=1)
 
 setup_menu_interface()
+
+
 
 knoppen_frame = tk.Frame(root)
 knoppen_frame.pack(fill=tk.X, pady=10)

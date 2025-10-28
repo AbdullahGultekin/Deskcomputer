@@ -3,7 +3,7 @@ from tkinter import ttk
 import database  # Gebruik de nieuwe database module
 
 
-def open_klanten_zoeken(root, tel_entry, adres_entry, nr_entry, postcode_var, postcodes_lijst):
+def open_klanten_zoeken(root, tel_entry, naam_entry,  adres_entry, nr_entry, postcode_var, postcodes_lijst):
     """Opent een venster om een klant te zoeken op telefoonnummer en de velden in te vullen."""
     win = tk.Toplevel(root)
     win.title("Zoek Klant")
@@ -64,6 +64,9 @@ def open_klanten_zoeken(root, tel_entry, adres_entry, nr_entry, postcode_var, po
         if geselecteerde_klant:
             tel_entry.delete(0, tk.END)
             tel_entry.insert(0, geselecteerde_klant['telefoon'])
+
+            naam_entry.delete(0, tk.END)
+            naam_entry.insert(0, geselecteerde_klant['naam'] or "")
 
             adres_entry.delete(0, tk.END)
             adres_entry.insert(0, geselecteerde_klant['straat'])

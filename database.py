@@ -183,13 +183,24 @@ def create_tables():
                    (
                        jaar
                        INTEGER
-                       PRIMARY
-                       KEY,
+                       NOT
+                       NULL,
+                       dag
+                       INTEGER
+                       NOT
+                       NULL,
                        laatste_nummer
                        INTEGER
                        NOT
-                       NULL
+                       NULL,
+                       PRIMARY
+                       KEY
+                   (
+                       jaar,
+                       dag
                    )
+                       )
+
                    ''')
 
     # Favoriete bestellingen (per klant)
@@ -579,39 +590,36 @@ def boek_voorraad_verbruik(bestelling_id: int):
 
 
 def get_next_bonnummer(peek_only=False):
-    """
-    Genereert een uniek, oplopend bonnummer voor het huidige jaar.
-    Als peek_only=True, retourneert het volgende nummer zonder de teller te verhogen.
-    Het bonnummer wordt geretourneerd als een string in het formaat 'YYYYNNNN'.
-    Deze functie gebruikt de 'bon_teller' tabel voor het beheer van de nummers.
-    """
+    import datetime
+    now = datetime.datetime.now()
+    jaar = now.year
+    dag_in_jaar = now.timetuple().tm_yday  # dagnummer in jaar (1-366)
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    current_year = datetime.datetime.now().year
     try:
-        # Zorg ervoor dat er een entry is voor het huidige jaar in bon_teller.
-        # Als het jaar nog niet bestaat, wordt het ingevoegd met laatste_nummer = 0.
-        cursor.execute("INSERT OR IGNORE INTO bon_teller (jaar, laatste_nummer) VALUES (?, 0)", (current_year,))
-        # Belangrijk: commit de INSERT OR IGNORE, anders ziet de volgende SELECT het mogelijk niet in dezelfde transactie.
+        cursor.execute(
+            "INSERT OR IGNORE INTO bon_teller (jaar, dag, laatste_nummer) VALUES (?, ?, 0)",
+            (jaar, dag_in_jaar)
+        )
         conn.commit()
-
-        # Haal het huidige laatste_nummer op voor het huidige jaar.
-        cursor.execute("SELECT laatste_nummer FROM bon_teller WHERE jaar = ?", (current_year,))
+        cursor.execute(
+            "SELECT laatste_nummer FROM bon_teller WHERE jaar = ? AND dag = ?",
+            (jaar, dag_in_jaar)
+        )
         result = cursor.fetchone()
-        # current_last_number zou geen None moeten zijn na INSERT OR IGNORE, maar een fallback is goed
         current_last_number = result['laatste_nummer'] if result else 0
-
-        # Bereken het volgende nummer.
         next_number = current_last_number + 1
 
         if not peek_only:
-            # Als het geen 'peek' is, update dan de teller in de database met het nieuwe nummer.
-            cursor.execute("UPDATE bon_teller SET laatste_nummer = ? WHERE jaar = ?", (next_number, current_year))
+            cursor.execute(
+                "UPDATE bon_teller SET laatste_nummer = ? WHERE jaar = ? AND dag = ?",
+                (next_number, jaar, dag_in_jaar)
+            )
             conn.commit()
-        # Als peek_only=True, dan wordt de teller niet geüpdatet in de database.
 
-        # Formatteer het bonnummer als een string (bijv. "20250001").
-        return f"{current_year}{next_number:04d}"
+        # Bonnummer structuur: YYYYNNNN (dag telt alleen voor reset, niet zichtbaar in bonnummer)
+        return f"{jaar}{next_number:04d}"
     finally:
         conn.close()
 

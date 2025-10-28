@@ -182,14 +182,21 @@ def create_tables():
                    CREATE TABLE IF NOT EXISTS bon_teller
                    (
                        jaar
-                       INTEGER
-                       PRIMARY
-                       KEY,
+                       INTEGER,
+                       dag
+                       INTEGER,
                        laatste_nummer
                        INTEGER
                        NOT
-                       NULL
+                       NULL,
+                       PRIMARY
+                       KEY
+                   (
+                       jaar,
+                       dag
                    )
+                       )
+
                    ''')
 
     # Favoriete bestellingen (per klant)
