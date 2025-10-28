@@ -1155,12 +1155,21 @@ def setup_menu_interface():
     category_buttons_frame.pack(fill=tk.X)
 
     categories = list(menu_data.keys())
+    categorie_kleuren = [
+        "#B4DAF3", "#D1FFD1", "#FAF0C7", "#FFD1E1",
+        "#D6EAF8", "#F7F7D7", "#F5CBA7", "#F9E79F"
+    ]
+
     for i, cat_name in enumerate(categories):
         row_num = i // 8
         col_num = i % 8
-        btn = tk.Button(category_buttons_frame, text=cat_name.upper(), bg="lightgreen",
-                        font=("Arial", 10, "bold"), padx=5, pady=5,
-                        command=lambda cn=cat_name: on_select_categorie(cn))
+        kleur = categorie_kleuren[i % len(categorie_kleuren)]
+        btn = tk.Button(
+            category_buttons_frame, text=cat_name.upper(),
+            bg=kleur, fg="#295147",
+            font=("Arial", 10, "bold"), padx=5, pady=5,
+            command=lambda cn=cat_name: on_select_categorie(cn)
+        )
         btn.grid(row=row_num, column=col_num, sticky="nsew", padx=2, pady=2)
         category_buttons_frame.grid_columnconfigure(col_num, weight=1)
 
@@ -1280,104 +1289,101 @@ def test_bestellingen_vullen():
     messagebox.showinfo("Test", "Testgegevens zijn ingevuld!")
 
 
+
 # GUI opzet START
 root = tk.Tk()
 _initialize_app_variables(root)
 root.title("Pizzeria Bestelformulier")
 root.geometry("1400x900")
 root.minsize(1200, 800)
+root.configure(bg="#F3F2F1")  # Hoofdachtergrond
 
-main_frame = tk.Frame(root, padx=10, pady=10)
+main_frame = tk.Frame(root, padx=10, pady=10, bg="#F3F2F1")
 main_frame.pack(fill=tk.BOTH, expand=True)
 
-klant_frame = tk.LabelFrame(main_frame, text="Klantgegevens", padx=10, pady=10)
+klant_frame = tk.LabelFrame(main_frame, text="Klantgegevens", padx=10, pady=10, bg="#E1FFE1", fg="#26734D")
 klant_frame.pack(fill=tk.X, pady=(0, 10))
-tel_adres_frame = tk.Frame(klant_frame)
+tel_adres_frame = tk.Frame(klant_frame, bg="#E1FFE1")
 tel_adres_frame.pack(fill=tk.X)
 
-tk.Label(tel_adres_frame, text="Telefoon:").grid(row=0, column=0, sticky="w", padx=(0, 5))
-telefoon_entry = tk.Entry(tel_adres_frame, width=15)
+tk.Label(tel_adres_frame, text="Telefoon:", bg="#E1FFE1", fg="#215468").grid(row=0, column=0, sticky="w", padx=(0, 5))
+telefoon_entry = tk.Entry(tel_adres_frame, width=15, bg="#F9F9FF")
 telefoon_entry.grid(row=0, column=1, sticky="w")
 telefoon_entry.bind("<Return>", lambda e: vul_klantgegevens_automatisch())
 telefoon_entry.bind("<FocusOut>", lambda e: vul_klantgegevens_automatisch())
 
-# Optioneel NAAM veld toegevoegd
-tk.Label(tel_adres_frame, text="Naam:").grid(row=0, column=2, sticky="w", padx=(0, 5))
-naam_entry = tk.Entry(tel_adres_frame, width=17)
+tk.Label(tel_adres_frame, text="Naam:", bg="#E1FFE1", fg="#215468").grid(row=0, column=2, sticky="w", padx=(0, 5))
+naam_entry = tk.Entry(tel_adres_frame, width=17, bg="#FFFDE1")
 naam_entry.grid(row=0, column=3, sticky="w", padx=(0, 10))
 
-tk.Button(tel_adres_frame, text="Zoek",
-          command=lambda: open_klanten_zoeken(root, telefoon_entry, naam_entry, adres_entry, nr_entry, postcode_var,
-                                              postcodes),
-          padx=5).grid(row=0, column=4, sticky="w", padx=(2, 15))
+tk.Button(
+    tel_adres_frame, text="Zoek",
+    command=lambda: open_klanten_zoeken(root, telefoon_entry, naam_entry, adres_entry, nr_entry, postcode_var,
+                                        postcodes),
+    padx=5, bg="#FFD1E1", fg="#7C1230"
+).grid(row=0, column=4, sticky="w", padx=(2, 15))
 
-# Adres, nr schuiven op (was col 3 en 4)
-tk.Label(tel_adres_frame, text="Adres:").grid(row=0, column=5, sticky="w", padx=(0, 5))
-adres_entry = tk.Entry(tel_adres_frame, width=25)
+tk.Label(tel_adres_frame, text="Adres:", bg="#E1FFE1", fg="#215468").grid(row=0, column=5, sticky="w", padx=(0, 5))
+adres_entry = tk.Entry(tel_adres_frame, width=25, bg="#F9F9FF")
 adres_entry.grid(row=0, column=6, sticky="w", padx=(0, 15))
 adres_entry.bind("<KeyRelease>", on_adres_entry)
 
-# Suggestie-listbox direct onder adres_entry
-lb_suggesties = tk.Listbox(tel_adres_frame, height=4, width=28)
+lb_suggesties = tk.Listbox(tel_adres_frame, height=4, width=28, bg="#FFFDE1")
 lb_suggesties.grid(row=1, column=6, sticky="w", padx=(0, 15))
 lb_suggesties.bind("<<ListboxSelect>>", selectie_suggestie)
 lb_suggesties.grid_remove()
 
-tk.Label(tel_adres_frame, text="Nr:").grid(row=0, column=7, sticky="w", padx=(0, 5))
-nr_entry = tk.Entry(tel_adres_frame, width=5)
+tk.Label(tel_adres_frame, text="Nr:", bg="#E1FFE1", fg="#215468").grid(row=0, column=7, sticky="w", padx=(0, 5))
+nr_entry = tk.Entry(tel_adres_frame, width=5, bg="#F9F9FF")
 nr_entry.grid(row=0, column=8, sticky="w")
 
-postcode_opmerking_frame = tk.Frame(klant_frame)
+postcode_opmerking_frame = tk.Frame(klant_frame, bg="#E1FFE1")
 postcode_opmerking_frame.pack(fill=tk.X, pady=(10, 0))
-tk.Label(postcode_opmerking_frame, text="Postcode/Gemeente:").grid(row=0, column=0, sticky="w", padx=(0, 5))
+tk.Label(postcode_opmerking_frame, text="Postcode/Gemeente:", bg="#E1FFE1", fg="#215468").grid(row=0, column=0,
+                                                                                               sticky="w", padx=(0, 5))
 postcode_var = tk.StringVar(master=root)
 postcode_var.set(postcodes[0])
 postcode_optionmenu = tk.OptionMenu(postcode_opmerking_frame, postcode_var, *postcodes)
-postcode_optionmenu.config(width=20)
+postcode_optionmenu.config(width=20, bg="#E1FFE1")
 postcode_optionmenu.grid(row=0, column=1, sticky="w", padx=(0, 15))
-tk.Label(postcode_opmerking_frame, text="Opmerking:").grid(row=0, column=2, sticky="w", padx=(0, 5))
-opmerkingen_entry = tk.Entry(postcode_opmerking_frame, width=30)
+tk.Label(postcode_opmerking_frame, text="Opmerking:", bg="#E1FFE1", fg="#215468").grid(row=0, column=2, sticky="w",
+                                                                                       padx=(0, 5))
+opmerkingen_entry = tk.Entry(postcode_opmerking_frame, width=30, bg="#FFFDE1")
 opmerkingen_entry.grid(row=0, column=3, sticky="we")
 postcode_opmerking_frame.grid_columnconfigure(3, weight=1)
 
 setup_menu_interface()
 
-
-
-knoppen_frame = tk.Frame(root)
+knoppen_frame = tk.Frame(root, bg="#ECF5FF")
 knoppen_frame.pack(fill=tk.X, pady=10)
-tk.Button(knoppen_frame, text="Menu beheren", command=lambda: open_menu_management(root), bg="#E1FFFF",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Extras beheren", command=lambda: open_extras_management(root), bg="#FFFFE1",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Klanten beheren", command=lambda: open_klant_management(root), bg="#E1FFE1",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Geschiedenis",
-          command=lambda: open_geschiedenis(root, menu_data, EXTRAS, app_settings),
-          bg="#E1FFE1",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Rapportage", command=lambda: open_rapportage(root), bg="#E1E1FF",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Backup/Restore", command=lambda: open_backup_tool(root), bg="#E1E1FF",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Printer Instellingen", command=open_printer_settings, bg="#E1E1FF",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Koeriers",
-          command=lambda: open_koeriers(root),
-          bg="#E1FFE1", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(10, 0))
-# Bestelling opslaan knop roept nu de print_preview functie aan
-tk.Button(knoppen_frame, text="Bon Afdrukken/Opslaan", command=show_print_preview, bg="#D1FFD1",
-          font=("Arial", 11), padx=10, pady=5).pack(side=tk.RIGHT)
-tk.Button(knoppen_frame, text="TEST", command=test_bestellingen_vullen, bg="yellow",
+
+tk.Button(knoppen_frame, text="Menu beheren", command=lambda: open_menu_management(root),
+          bg="#D6EAF8", fg="#174F20", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Extras beheren", command=lambda: open_extras_management(root),
+          bg="#FCF3CF", fg="#B7950B", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Klanten beheren", command=lambda: open_klant_management(root),
+          bg="#D5F5E3", fg="#0E6655", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Geschiedenis", command=lambda: open_geschiedenis(root, menu_data, EXTRAS, app_settings),
+          bg="#F9E79F", fg="#B7950B", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Rapportage", command=lambda: open_rapportage(root),
+          bg="#E1E1FF", fg="#413E94", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Backup/Restore", command=lambda: open_backup_tool(root),
+          bg="#FADBD8", fg="#7C1230", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Printer Instellingen", command=open_printer_settings,
+          bg="#D6DBDF", fg="#626567", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
+tk.Button(knoppen_frame, text="Koeriers", command=lambda: open_koeriers(root),
+          bg="#D5F5E3", fg="#0E6655", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(10, 0))
+tk.Button(knoppen_frame, text="Bon Afdrukken/Opslaan", command=show_print_preview,
+          bg="#ABEBC6", fg="#225722", font=("Arial", 11), padx=10, pady=5).pack(side=tk.RIGHT)
+tk.Button(knoppen_frame, text="TEST", command=test_bestellingen_vullen, bg="#FFD700", fg="#867B17",
           font=("Arial", 10), padx=5, pady=2).pack(side=tk.RIGHT, padx=(0, 10))
 
-# BINDING VOOR CTRL+P / CMD+P
-root.bind("<Control-p>", show_print_preview)  # Voor Windows/Linux
-root.bind("<Command-p>", show_print_preview)  # Voor macOS
+root.bind("<Control-p>", show_print_preview)
+root.bind("<Command-p>", show_print_preview)
 
-# Stel de initiële categorie in nadat de mainloop is gestart
 categories = load_menu_categories()
 if categories:
     root.after(100, lambda: on_select_categorie(categories[0]))
+
 
 root.mainloop()
