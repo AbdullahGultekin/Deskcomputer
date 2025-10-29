@@ -1,6 +1,8 @@
 import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
+from main import naam_entry
+
 
 def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None, extras_data=None):
     """
@@ -70,12 +72,11 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     address_lines.extend(wrap_text(f"{klant['adres']} {klant['nr']}"))
     address_lines.extend(wrap_text(f"{klant['postcode_gemeente']}"))
     address_lines.extend(wrap_text(klant['telefoon']))
-    address_lines.append("")  # Lege regel voor Dhr./Mvr.
 
-    # Dhr./Mvr. en naam
-    if klant.get("naam"):
-        address_lines.append("Dhr. / Mvr.")
-        address_lines.extend(wrap_text(klant["naam"]))
+    # Dhr./Mvr. en naam altijd toevoegen, ook als naam leeg is
+    address_lines.append("Dhr. / Mvr.")
+    name_to_display = klant.get("naam", "").strip()
+    address_lines.extend(wrap_text(name_to_display))
 
     address_lines.append("")  # Lege regel voor details
 
@@ -100,11 +101,11 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         if "large" in cat:
             prefix = "Large"
         if "grote-broodjes" in cat:
-            prefix = "Groot Brood"
+            prefix = "Groot"
         if "klein-broodjes" in cat:
-            prefix = "Klein Brood"
+            prefix = "Klein"
         if "turks-brood" in cat:
-            prefix = "Turks Brood"
+            prefix = "Turks"
         if "durum" in cat:
             prefix = "Durum"
         if "pasta" in cat:
@@ -115,7 +116,7 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             prefix = "Kapsalon"
         if "vegetarisch broodjes" in cat:
             prefix = "Broodje"
-            
+
 
 
         # Bepaal of het een mix schotel is
