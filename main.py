@@ -9,7 +9,7 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-import win32print
+#import win32print
 import database
 import tempfile
 import subprocess
@@ -316,6 +316,7 @@ def _get_current_order_data():
         return None, None, None  # Geen data
 
     klant_data = {
+        "naam": naam_entry.get().strip(),
         "telefoon": telefoon,
         "adres": adres_entry.get(),
         "nr": nr_entry.get(),

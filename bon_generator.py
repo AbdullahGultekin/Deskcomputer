@@ -1,8 +1,7 @@
 import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
-def naam_entry():
-    from main import naam_entry
+
 
 
 
@@ -74,11 +73,11 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     address_lines.extend(wrap_text(f"{klant['adres']} {klant['nr']}"))
     address_lines.extend(wrap_text(f"{klant['postcode_gemeente']}"))
     address_lines.extend(wrap_text(klant['telefoon']))
-
-    # Dhr./Mvr. en naam altijd toevoegen, ook als naam leeg is
     address_lines.append("Dhr. / Mvr.")
-    name_to_display = klant.get("naam", "").strip()
-    address_lines.extend(wrap_text(name_to_display))
+    address_lines.extend(wrap_text(klant.get("naam", "")))
+    address_lines.append("")  # Lege regel
+
+
 
     address_lines.append("")  # Lege regel voor details
 
@@ -145,37 +144,29 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             extras = item.get('extras', {})
             half_half = extras.get('half_half')
             if half_half and isinstance(half_half, list) and len(half_half) == 2:
-                # Zoek nummers bij naam in menu_data
+                # Zoek nummers bij naam in menu_data (met lower() en strip())
                 gekozen_cat = [k for k in menu_data_for_drinks.keys() if k.lower() == item['categorie'].lower()]
                 if gekozen_cat:
                     all_pizzas = menu_data_for_drinks[gekozen_cat[0]]
                 else:
                     all_pizzas = []
                 nummers = []
-                for pizza_naam in half_half:
+                for pizza_naam in half_half:  # pizza_naam is bijvoorbeeld "1", "3" etc.
                     nummer = ""
-                    for p in all_pizzas:
-                        if p['naam'] == pizza_naam:
-                            nummer = get_pizza_num(p['naam'])
+                    for p in all_pizzas:  # all_pizzas is jouw menu-lijst voor 'Medium pizza's'
+                        menu_nummer = get_pizza_num(p['naam'])  # Geeft "1", "2", "3", etc.
+                        if menu_nummer == str(pizza_naam).strip():
+                            nummer = menu_nummer
                             break
-                    nummers.append(nummer)
+                    if not nummer:
+                        print(f"Waarschuwing: geen nummer gevonden voor pizza '{pizza_naam}'")
+                    nummers.append(nummer if nummer else '?')
                 display_name = f"{formaat} {nummers[0]}/{nummers[1]}"
+
             else:
                 # Gewone pizza: formaat + nummer
                 nummer = get_pizza_num(product_naam)
                 display_name = f"{formaat} {nummer}"
-        else:
-            # Oud gedrag voor niet-pizza producten
-            # Bepaal prefix per type
-            if is_mixschotel:
-                display_name = product_naam.strip()
-            elif any(x in cat for x in (
-                    'schotel', 'grote-broodjes', 'klein-broodjes',
-                    'durum', 'turks-brood'
-            )):
-                display_name = f"{prefix} {product_naam}".strip()
-            else:
-                display_name = product_naam.strip()
 
         qty = f"{aantal}x"
         price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
