@@ -1714,25 +1714,25 @@
     },
     {
       "id": 1610,
-      "naam": "Coca cola",
+      "naam": "Fles Coca cola",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1611,
-      "naam": "Cola zero",
+      "naam": "Fles Cola zero",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1612,
-      "naam": "Fanta",
+      "naam": "Fles Fanta",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1613,
-      "naam": "Ice tea",
+      "naam": "Fles Ice tea",
       "prijs": 5.0,
       "desc": "1,5l"
     }

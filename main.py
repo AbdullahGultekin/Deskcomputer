@@ -491,18 +491,16 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
             win32print.WritePrinter(hprinter, b'\n')
 
-            # Adres sectie
+            # Vul klantnaam vooraf; direct uit invoerveld of database!
+            klantnaam = naam_entry.get() if 'naam_entry' in locals() else ""  # of database etc.
+
             win32print.WritePrinter(hprinter, 'Leveringsadres:\n'.encode('cp858'))
 
-            # Naamregel eerst tonen
-            if dhr_mvr_idx > 0 and details_idx > 0:
-                naam_section = '\n'.join(bon_lines[dhr_mvr_idx:details_idx])
-                naam_lines = [l for l in naam_section.split('\n') if l.strip()]
-                if naam_lines:
-                    win32print.WritePrinter(hprinter, '\n'.join(naam_lines).encode('cp858'))
-                    win32print.WritePrinter(hprinter, b'\n')
+            # Klantnaam expliciet printen
+            if klantnaam:
+                win32print.WritePrinter(hprinter, f'{klantnaam}\n'.encode('cp858'))
 
-            # Daarna het adres (zoals je nu doet)
+            # Daarna het adres (zoals je nu doet, maar zonder de slice voor klantnaam)
             adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
             address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
             for addr_line in address_content:
@@ -598,7 +596,7 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
 
             # Centraal openingsuren, onder "Eet smakelijk"
-            win32print.WritePrinter(hprinter, b'Van Dins- tot Zon van 17 u Tot 20u30\n')
+            win32print.WritePrinter(hprinter, b'Van Dins- tot Zon\n vanaf 17 u Tot 20u30\n')
 
             # Reset uitlijning
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
@@ -744,7 +742,7 @@ def clear_opties():
 
 
 def render_opties(product):
-    global current_options_popup_window, state, EXTRAS, menu_data, ctrl, half1_var, half2_var, right_overview, bestelregels, producten_titel, opt_title
+    global current_options_popup_window, state, EXTRAS, menu_data, ctrl, half1_var, half2_var, right_overview, bestelregels, producten_titel, opt_title, root
 
     # Sluit een eventueel bestaand pop-up venster voor opties
     if current_options_popup_window and current_options_popup_window.winfo_exists():
@@ -764,18 +762,18 @@ def render_opties(product):
     clear_opties()
 
     # Creëer een nieuw Toplevel venster voor de productopties
-    options_window = tk.Toplevel(root)
+    options_window = tk.Toplevel(root, bg="#F9F9F9")
     options_window.title(f"Opties voor {product['naam']}")
     options_window.transient(root)
     options_window.grab_set()
     # Stel vaste grootte en positie in:
-    width = 600
-    height = 700
+    width = 700
+    height = 800
     # Het venster centreren op het scherm — berekenen van positie midden scherm
     screen_width = options_window.winfo_screenwidth()
     screen_height = options_window.winfo_screenheight()
     x = (screen_width // 2) - (width // 2)
-    y = (screen_height // 2) - (height // 2)
+    y = max(60, (screen_height // 2) - (height // 2))
     options_window.geometry(f"{width}x{height}+{x}+{y}")
     options_window.resizable(True, True)
     # Dwing Tkinter om het venster te updaten zodat winfo_width() een correcte waarde geeft
@@ -850,33 +848,46 @@ def render_opties(product):
 
     row_idx = 1
 
+    def create_pizza_number_grid(parent, selected_var, labeltext, default):
+        grid_frame = tk.LabelFrame(parent, text=labeltext, padx=6, pady=6, font=("Arial", 10, "bold"), bg="#F9F9F9",
+                                   fg="#555")
+        grid_frame.pack(side=tk.LEFT, padx=12, pady=6)
+        btn_font = ("Arial", 10, "bold")
+        max_num, cols = 49, 7
+        for i in range(1, max_num + 1):
+            btn = tk.Radiobutton(
+                grid_frame,
+                text=str(i),
+                value=str(i),
+                variable=selected_var,
+                font=btn_font,
+                width=2,
+                indicatoron=0,
+                bg="#E6E6FA",
+                selectcolor="#FFDD44",
+                relief=tk.RIDGE
+            )
+            row = (i - 1) // cols
+            col = (i - 1) % cols
+            btn.grid(row=row, column=col, padx=2, pady=2)
+        selected_var.set(str(default))
+        return grid_frame
+
+    # Vervang hiermee de oude half-half sectie:
     if is_half_half:
-        tk.Label(dynamic_product_options_frame_toplevel, text="Half-Half (kies 2 pizza's):",
-                 font=("Arial", 11, "bold")).grid(
-            row=row_idx,
-            column=0,
-            sticky="w",
-            pady=(8, 2))
-        row_idx += 1
-        half_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-        half_frame.grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=10)
+        tk.Label(dynamic_product_options_frame_toplevel, text="Half-half pizza (kies 2 nummers):",
+                 font=("Arial", 12, "bold"), bg="#F9F9F9").grid(
+            row=row_idx, column=0, columnspan=3, pady=(18, 8), padx=14, sticky="w")
 
-        all_pizzas_in_cat = menu_data.get(state["categorie"], [])
-        selectable_pizza_names = [p['naam'] for p in all_pizzas_in_cat if
-                                  not ("half half" in p['naam'].lower() and p['naam'].startswith("50."))]
+        half_half_row = tk.Frame(dynamic_product_options_frame_toplevel, bg="#F9F9F9")
+        half_half_row.grid(row=row_idx + 1, column=0, columnspan=3, sticky="w", padx=14)
 
-        tk.Label(half_frame, text="Pizza 1:").grid(row=0, column=0, padx=(0, 5), sticky="w")
-        half1_cb = ttk.Combobox(half_frame, textvariable=half1_var, values=selectable_pizza_names, state="readonly",
-                                width=15, font=("Arial", 10))
-        half1_cb.grid(row=0, column=1, padx=(0, 15), sticky="w")
-        if selectable_pizza_names: half1_cb.set(selectable_pizza_names[0])
-
-        tk.Label(half_frame, text="Pizza 2:").grid(row=0, column=2, padx=(0, 5), sticky="w")
-        half2_cb = ttk.Combobox(half_frame, textvariable=half2_var, values=selectable_pizza_names, state="readonly",
-                                width=15, font=("Arial", 10))
-        half2_cb.grid(row=0, column=3, sticky="w")
-        if len(selectable_pizza_names) > 1: half2_cb.set(selectable_pizza_names[1])
-        row_idx += 1
+        # Zorg dat half1_var en half2_var van het type tk.StringVar zijn!
+        create_pizza_number_grid(half_half_row, half1_var, "Pizza 1", default=1)
+        create_pizza_number_grid(half_half_row, half2_var, "Pizza 2", default=2)
+        row_idx += 2
+        half1_var.set("1")  # of een beginwaarde
+        half2_var.set("2")
 
     if not is_pizza and isinstance(extras_cat, dict) and 'vlees' in extras_cat and extras_cat['vlees']:
         tk.Label(dynamic_product_options_frame_toplevel, text="Vlees:", font=("Arial", 11, "bold")).grid(row=row_idx,
@@ -1046,14 +1057,15 @@ def render_opties(product):
         if is_half_half:
             h1_val = half1_var.get()
             h2_val = half2_var.get()
-            all_pizzas_in_cat = menu_data.get(state["categorie"], [])
-            selectable_pizza_names = [p['naam'] for p in all_pizzas_in_cat if
-                                      not ("half half" in p['naam'].lower() and p['naam'].startswith("50."))]
-            if h1_val not in selectable_pizza_names or h2_val not in selectable_pizza_names:
-                messagebox.showwarning("Waarschuwing", "Kies twee geldige pizza's voor de Half-Half optie.")
+            print("Pizza 1 gekozen:", repr(h1_val))
+            print("Pizza 2 gekozen:", repr(h2_val))
+            if not h1_val or not h2_val or h1_val not in [str(n) for n in range(1, 50)] or h2_val not in [str(n) for n
+                                                                                                          in
+                                                                                                          range(1, 50)]:
+                messagebox.showwarning("Waarschuwing", "Kies twee geldige pizza-nummers voor de Half-Half optie.")
                 return
             if h1_val == h2_val:
-                messagebox.showwarning("Waarschuwing", "Kies twee verschillende pizza's voor de Half-Half optie.")
+                messagebox.showwarning("Waarschuwing", "Kies twee verschillende pizza-nummers voor de Half-Half optie.")
                 return
             extra['half_half'] = [h1_val, h2_val]
 
@@ -1100,41 +1112,53 @@ def render_opties(product):
 def render_producten():
     global product_grid_holder, state, menu_data
     cat = state["categorie"] or "-"
+    items = state["producten"]
+    columns = 5
+
+    # Vaste lijst van accentkleuren, herhaald op volgorde
+    kleuren_lijst = [
+        "#FFDD44",  # Geel
+        "#6BE3C1",  # Mint
+        "#FF9A8B",  # Oranje/Rood
+        "#84B6F4",  # Blauw
+        "#FFD6E5",  # Pastel roze
+    ]
 
     if product_grid_holder:
         for w in product_grid_holder.winfo_children():
             w.destroy()
 
-    items = state["producten"]
-    columns = 5
-
     is_pizza_category = "pizza's" in (cat or "").lower()
 
     for i, product in enumerate(items):
-        card_frame = tk.Frame(product_grid_holder, bd=1, relief=tk.RAISED, padx=2, pady=2)
+        # Selecteer kleur per index
+        bg_color = kleuren_lijst[i % len(kleuren_lijst)]
+
+        card_frame = tk.Frame(product_grid_holder, bd=1, relief=tk.RAISED, padx=2, pady=2, bg=bg_color)
         card_frame.grid(row=i // columns, column=i % columns, padx=2, pady=2, sticky="nsew")
         card_frame.grid_propagate(False)
 
-        bg_color = "lightgrey"
-        if "natuur" in product['naam'].lower():
-            bg_color = "#FFFF99"
-        elif "mexicano" in product['naam'].lower():
-            bg_color = "#FF9999"
-        elif "tropical" in product['naam'].lower():
-            bg_color = "#99CCFF"
-        elif "special" in product['naam'].lower():
-            bg_color = "#CC99FF"
-
         if is_pizza_category:
+            # Toon enkel het pizzanummer voor deze categorie
             pizza_number = product['naam'].split('.')[0].strip()
-            btn = tk.Button(card_frame, text=pizza_number, font=("Arial", 14, "bold"), bg=bg_color,
-                            command=lambda p=product: render_opties(p))
+            btn = tk.Button(
+                card_frame,
+                text=pizza_number,
+                font=("Arial", 14, "bold"),
+                bg=bg_color,
+                command=lambda p=product: render_opties(p)
+            )
             btn.pack(fill="both", expand=True)
             card_frame.config(width=80, height=80)
         else:
             btn_text = f"{product['naam']}\n€{product['prijs']:.2f}"
-            btn = tk.Button(card_frame, text=btn_text, font=("Arial", 10), bg=bg_color,
-                            command=lambda p=product: render_opties(p))
+            btn = tk.Button(
+                card_frame,
+                text=btn_text,
+                font=("Arial", 10),
+                bg=bg_color,
+                command=lambda p=product: render_opties(p)
+            )
             btn.pack(fill="both", expand=True)
             card_frame.config(width=120, height=60)
 
@@ -1181,7 +1205,7 @@ def setup_menu_interface():
     menu_main_panel.add(menu_selection_frame, minsize=800)
 
     # CATEGORIE KNOPPEN BOVENAAN
-    category_buttons_frame = tk.Frame(menu_selection_frame, padx=5, pady=5, bg="#ECECEC")
+    category_buttons_frame = tk.Frame(menu_selection_frame, padx=4, pady=4, bg="#ECECEC")
     category_buttons_frame.pack(fill=tk.X)
 
     categories = list(menu_data.keys())

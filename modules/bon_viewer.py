@@ -63,7 +63,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     qr_addr_frame.pack(fill="x", pady=(2, 10))
 
     try:
-        maps_url = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote_plus(address_for_qr)
+        maps_url = "https://www.google.com/maps/dir/?api=1&destination=" + urllib.parse.quote_plus(
+            address_for_qr) + "&dir_action=navigate"
+
         qr = qrcode.QRCode(version=1, box_size=1, border=1)
         qr.add_data(maps_url)
         qr.make(fit=True)

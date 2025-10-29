@@ -113,6 +113,10 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             prefix = "Schotel"
         if "kapsalon" in cat:
             prefix = "Kapsalon"
+        if "vegetarisch broodjes" in cat:
+            prefix = "Broodje"
+            
+
 
         # Bepaal of het een mix schotel is
         is_mixschotel = "mix schotel" in cat or "mix-schotel" in cat or "mixschotel" in cat
