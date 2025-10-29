@@ -742,102 +742,63 @@ def clear_opties():
     if half2_var: half2_var.set("2")  # Stel een default in of leeg maken
 
 
+# ... existing code ...
+
 def render_opties(product):
     global current_options_popup_window, state, EXTRAS, menu_data, ctrl, half1_var, half2_var, right_overview, bestelregels, producten_titel, opt_title, root
 
-    # Sluit een eventueel bestaand pop-up venster voor opties
     if current_options_popup_window and current_options_popup_window.winfo_exists():
         current_options_popup_window.destroy()
         current_options_popup_window = None
 
     state["gekozen_product"] = product
     if not product:
-        # Dit deel werkt de titel in het hoofdvenster bij als er geen product is gekozen
-        if opt_title:  # Controleer of opt_title is geïnitialiseerd
+        if opt_title:
             opt_title.config(text="Opties Product")
-        if right_overview:  # Controleer of right_overview is geïnitialiseerd
+        if right_overview:
             right_overview.delete(1.0, tk.END)
         return
 
-    # Reset de control variabelen voordat het nieuwe venster wordt geopend
     clear_opties()
 
-    # Creëer een nieuw Toplevel venster voor de productopties
     options_window = tk.Toplevel(root, bg="#F9F9F9")
-    options_window.title(f"Opties voor {product['naam']}")
+    options_window.title(f"Opties — {product['naam']}")
     options_window.transient(root)
     options_window.grab_set()
-    # Stel vaste grootte en positie in:
-    width = 700
-    height = 800
-    # Het venster centreren op het scherm — berekenen van positie midden scherm
-    screen_width = options_window.winfo_screenwidth()
-    screen_height = options_window.winfo_screenheight()
-    x = (screen_width // 2) - (width // 2)
-    y = max(60, (screen_height // 2) - (height // 2))
+
+    width, height = 700, 540
+    sw, sh = options_window.winfo_screenwidth(), options_window.winfo_screenheight()
+    x, y = (sw // 2) - (width // 2), max(40, (sh // 2) - (height // 2))
     options_window.geometry(f"{width}x{height}+{x}+{y}")
-    options_window.resizable(True, True)
-    # Dwing Tkinter om het venster te updaten zodat winfo_width() een correcte waarde geeft
-    options_window.update_idletasks()
+    options_window.resizable(False, False)
 
-    # Creëer een scrollbaar gebied in het Toplevel venster
-    opt_canvas_toplevel = tk.Canvas(options_window, highlightthickness=0)
-    opt_scroll_toplevel = tk.Scrollbar(opt_canvas_toplevel, orient=tk.VERTICAL, command=opt_canvas_toplevel.yview)
+    # Hoofdcontainer
+    root_frame = tk.Frame(options_window, bg="#F9F9F9", padx=10, pady=8)
+    root_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Dit frame zal alle dynamische opties bevatten
-    dynamic_product_options_frame_toplevel = tk.Frame(opt_canvas_toplevel)
+    # Bovenbalk: titel links, knoppen rechts (altijd zichtbaar)
+    topbar = tk.Frame(root_frame, bg="#F9F9F9")
+    topbar.pack(fill=tk.X, side=tk.TOP)
 
-    # Plaats het frame in de canvas en sla de ID op
-    # Geef het frame een initiële breedte, gebaseerd op de breedte van het Toplevel venster
-    canvas_frame_id = opt_canvas_toplevel.create_window(0, 0, window=dynamic_product_options_frame_toplevel,
-                                                        anchor="nw",
-                                                        width=options_window.winfo_width())
+    title_lbl = tk.Label(topbar, text=f"{product['naam']}", font=("Arial", 12, "bold"), bg="#F9F9F9")
+    title_lbl.pack(side=tk.LEFT, anchor="w")
 
-    opt_canvas_toplevel.configure(yscrollcommand=opt_scroll_toplevel.set)
-    opt_canvas_toplevel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    opt_scroll_toplevel.pack(side=tk.RIGHT, fill=tk.Y)
+    # Placeholder; functies worden later gedefinieerd maar knoppen alvast maken
+    acties_frame = tk.Frame(topbar, bg="#F9F9F9")
+    acties_frame.pack(side=tk.RIGHT, anchor="e")
 
-    # Functie om de breedte van het interne frame aan te passen wanneer de canvas groter/kleiner wordt
-    def _on_canvas_configure(event):
-        # Update de breedte van het interne frame op de canvas
-        opt_canvas_toplevel.itemconfigure(canvas_frame_id, width=event.width)
-        # Update de scrollregion op basis van de grootte van het frame
-        opt_canvas_toplevel.configure(scrollregion=opt_canvas_toplevel.bbox("all"))
+    # Content eronder
+    content = tk.Frame(root_frame, bg="#F9F9F9")
+    content.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
 
-    # Bind _on_canvas_configure aan het <Configure> event van de canvas zelf.
-    # Hiermee reageert het scrollgebied correct op veranderingen in de grootte van de canvas.
-    opt_canvas_toplevel.bind("<Configure>", _on_canvas_configure)
-
-    # Wanneer het venster wordt gesloten, reset dan ook de gekozen product staat
-    def on_options_window_close():
-        global current_options_popup_window
-        state["gekozen_product"] = None
-        if current_options_popup_window == options_window:  # Alleen resetten als dit het actieve venster is
-            current_options_popup_window = None
-        options_window.destroy()
-        if opt_title:  # Controleer of opt_title is geïnitialiseerd
-            opt_title.config(text="Opties Product")  # Reset de titel in het hoofdvenster
-
-    options_window.protocol("WM_DELETE_WINDOW", on_options_window_close)
-    current_options_popup_window = options_window  # Sla de referentie globaal op
-
-    # Update de titel in het hoofdvenster om het geselecteerde product te reflecteren
-    if opt_title:  # Controleer of opt_title is geïnitialiseerd
-        opt_title.config(text=f"Opties — {product['naam']}")
-
-    # --- Start met het plaatsen van de optie-widgets in dynamic_product_options_frame_toplevel ---
-    tk.Label(dynamic_product_options_frame_toplevel, text="Aantal:", font=("Arial", 11, "bold")).grid(row=0, column=0,
-                                                                                                      sticky="w",
-                                                                                                      pady=(2, 2))
-    tk.Spinbox(dynamic_product_options_frame_toplevel, from_=1, to=30, width=5, textvariable=ctrl["aantal"],
-               font=("Arial", 11)).grid(row=0,
-                                        column=1,
-                                        sticky="w",
-                                        pady=(2, 2))
+    # Aantal
+    tk.Label(content, text="Aantal:", font=("Arial", 10, "bold"), bg="#F9F9F9").grid(row=0, column=0, sticky="w")
+    tk.Spinbox(content, from_=1, to=30, width=5, textvariable=ctrl["aantal"], font=("Arial", 10)).grid(
+        row=0, column=1, sticky="w", pady=(0, 4)
+    )
 
     cat_key = (state["categorie"] or "").lower()
-    extras_cat = EXTRAS.get(cat_key, {})
-
+    extras_cat = EXTRAS.get(cat_key, {}) if isinstance(EXTRAS, dict) else {}
     product_extras = {}
     if product.get('naam') and isinstance(extras_cat, dict) and product['naam'] in extras_cat:
         product_extras = extras_cat[product['naam']]
@@ -847,222 +808,180 @@ def render_opties(product):
     is_pizza = cat_key in ("small pizza's", "medium pizza's", "large pizza's")
     is_half_half = is_pizza and ("half" in product['naam'].lower())
 
+    def section_label(parent, text):
+        return tk.Label(parent, text=text, font=("Arial", 10, "bold"), bg="#F9F9F9")
+
     row_idx = 1
 
-    def create_pizza_number_grid(parent, selected_var, labeltext, default):
-        grid_frame = tk.LabelFrame(parent, text=labeltext, padx=6, pady=6, font=("Arial", 10, "bold"), bg="#F9F9F9",
-                                   fg="#555")
-        grid_frame.pack(side=tk.LEFT, padx=12, pady=6)
-        btn_font = ("Arial", 10, "bold")
-        max_num, cols = 49, 7
-        for i in range(1, max_num + 1):
-            btn = tk.Radiobutton(
-                grid_frame,
-                text=str(i),
-                value=str(i),
-                variable=selected_var,
-                font=btn_font,
-                width=2,
-                indicatoron=0,
-                bg="#E6E6FA",
-                selectcolor="#FFDD44",
-                relief=tk.RIDGE
-            )
-            row = (i - 1) // cols
-            col = (i - 1) % cols
-            btn.grid(row=row, column=col, padx=2, pady=2)
-        selected_var.set(str(default))
-        return grid_frame
-
-    # Vervang hiermee de oude half-half sectie:
+    # Half-half
     if is_half_half:
-        tk.Label(dynamic_product_options_frame_toplevel, text="Half-half pizza (kies 2 nummers):",
-                 font=("Arial", 12, "bold"), bg="#F9F9F9").grid(
-            row=row_idx, column=0, columnspan=3, pady=(18, 8), padx=14, sticky="w")
-
-        half_half_row = tk.Frame(dynamic_product_options_frame_toplevel, bg="#F9F9F9")
-        half_half_row.grid(row=row_idx + 1, column=0, columnspan=3, sticky="w", padx=14)
-
-        # Zorg dat half1_var en half2_var van het type tk.StringVar zijn!
-        create_pizza_number_grid(half_half_row, half1_var, "Pizza 1", default=1)
-        create_pizza_number_grid(half_half_row, half2_var, "Pizza 2", default=2)
-        row_idx += 2
-        half1_var.set("1")  # of een beginwaarde
-        half2_var.set("2")
-
-    if not is_pizza and isinstance(extras_cat, dict) and 'vlees' in extras_cat and extras_cat['vlees']:
-        tk.Label(dynamic_product_options_frame_toplevel, text="Vlees:", font=("Arial", 11, "bold")).grid(row=row_idx,
-                                                                                                         column=0,
-                                                                                                         sticky="w",
-                                                                                                         pady=(8, 2))
+        section_label(content, "Half-half pizza: kies 2 nummers").grid(row=row_idx, column=0, columnspan=2, sticky="w",
+                                                                       pady=(6, 4))
         row_idx += 1
-        vlees_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-        vlees_frame.grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=10)
+        half_grid = tk.Frame(content, bg="#F9F9F9")
+        half_grid.grid(row=row_idx, column=0, columnspan=2, sticky="w")
+        row_idx += 1
+
+        def create_pizza_number_grid(parent, selected_var, labeltext, default):
+            frame = tk.LabelFrame(parent, text=labeltext, padx=6, pady=4, font=("Arial", 9, "bold"), bg="#F9F9F9",
+                                  fg="#555")
+            frame.pack(side=tk.LEFT, padx=8)
+            btn_font = ("Arial", 9, "bold")
+            max_num, cols = 49, 14
+            for i in range(1, max_num + 1):
+                btn = tk.Radiobutton(
+                    frame, text=str(i), value=str(i), variable=selected_var,
+                    font=btn_font, width=2, indicatoron=0, bg="#EDEBFE",
+                    selectcolor="#FFDD44", relief=tk.RIDGE, padx=0, pady=0
+                )
+                r, c = (i - 1) // cols, (i - 1) % cols
+                btn.grid(row=r, column=c, padx=1, pady=1, sticky="nsew")
+            selected_var.set(str(default))
+            return frame
+
+        create_pizza_number_grid(half_grid, half1_var, "Pizza 1", default=1)
+        create_pizza_number_grid(half_grid, half2_var, "Pizza 2", default=2)
+
+    # Vlees (niet-pizza)
+    if (not is_pizza) and isinstance(extras_cat, dict) and extras_cat.get('vlees'):
+        section_label(content, "Vlees:").grid(row=row_idx, column=0, sticky="w", pady=(6, 2))
+        vlees_frame = tk.Frame(content, bg="#F9F9F9")
+        vlees_frame.grid(row=row_idx, column=1, sticky="w")
         for i, v in enumerate(extras_cat['vlees']):
-            tk.Radiobutton(vlees_frame, text=v, variable=ctrl["vlees"], value=v, font=("Arial", 10)).grid(row=0,
-                                                                                                          column=i,
-                                                                                                          padx=4,
-                                                                                                          sticky="w")
+            tk.Radiobutton(vlees_frame, text=v, variable=ctrl["vlees"], value=v, font=("Arial", 9), bg="#F9F9F9").grid(
+                row=0, column=i, padx=3, sticky="w"
+            )
         ctrl["vlees"].set(extras_cat['vlees'][0])
         row_idx += 1
 
-    bron_bijgerecht = product_extras.get('bijgerecht', extras_cat.get('bijgerecht', []))
-    bijgerecht_aantal = product_extras.get('bijgerecht_aantal', 1)
-
+    # Bijgerecht(en)
+    bron_bijgerecht = product_extras.get('bijgerecht', extras_cat.get('bijgerecht', [])) if isinstance(extras_cat,
+                                                                                                       dict) else []
+    bijgerecht_aantal = product_extras.get('bijgerecht_aantal', 1) if isinstance(product_extras, dict) else 1
     if bron_bijgerecht:
-        tk.Label(dynamic_product_options_frame_toplevel, text=f"Bijgerecht{'en' if bijgerecht_aantal > 1 else ''}:",
-                 font=("Arial", 11, "bold")).grid(row=row_idx, column=0, sticky="w", pady=(8, 2))
-        row_idx += 1
-        bg_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-        bg_frame.grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=10)
-        # ctrl["bijgerecht_combos"].clear() # Verplaatst naar clear_opties
+        section_label(content, f"Bijgerecht{'en' if bijgerecht_aantal > 1 else ''}:").grid(row=row_idx, column=0,
+                                                                                           sticky="w", pady=(6, 2))
+        bg_frame = tk.Frame(content, bg="#F9F9F9")
+        bg_frame.grid(row=row_idx, column=1, sticky="w")
+        ctrl["bijgerecht_combos"].clear()
         for i in range(bijgerecht_aantal):
-            var = tk.StringVar(value=bron_bijgerecht[0] if bron_bijgerecht else "")
+            var = tk.StringVar(value=bron_bijgerecht[0])
             cb = ttk.Combobox(bg_frame, textvariable=var, values=bron_bijgerecht, state="readonly", width=18,
-                              font=("Arial", 10))
-            cb.grid(row=i // 2, column=i % 2, padx=5, pady=2, sticky="w")
+                              font=("Arial", 9))
+            cb.grid(row=i // 2, column=i % 2, padx=3, pady=2, sticky="w")
             ctrl["bijgerecht_combos"].append(var)
-        row_idx += 1 + (bijgerecht_aantal + 1) // 2
+        row_idx += 1
 
+    # Sauzen
     saus_key_in_extras = None
-    if 'sauzen' in product_extras:
+    if isinstance(product_extras, dict) and 'sauzen' in product_extras:
         saus_key_in_extras = 'sauzen'
-    elif 'saus' in product_extras:
+    elif isinstance(product_extras, dict) and 'saus' in product_extras:
         saus_key_in_extras = 'saus'
-    elif 'sauzen' in extras_cat:
+    elif isinstance(extras_cat, dict) and 'sauzen' in extras_cat:
         saus_key_in_extras = 'sauzen'
-    elif 'saus' in extras_cat:
+    elif isinstance(extras_cat, dict) and 'saus' in extras_cat:
         saus_key_in_extras = 'saus'
 
-    bron_sauzen = product_extras.get(saus_key_in_extras,
-                                     extras_cat.get(saus_key_in_extras, [])) if saus_key_in_extras else []
-    sauzen_aantal = product_extras.get('sauzen_aantal',
-                                       extras_cat.get('sauzen_aantal', 1) if isinstance(extras_cat, dict) else 1)
+    bron_sauzen = (product_extras.get(saus_key_in_extras, extras_cat.get(saus_key_in_extras, []))
+                   if saus_key_in_extras and isinstance(extras_cat, dict) else [])
+    sauzen_aantal = (product_extras.get('sauzen_aantal',
+                                        extras_cat.get('sauzen_aantal', 1)) if isinstance(extras_cat, dict) else 1)
 
     if saus_key_in_extras and bron_sauzen and sauzen_aantal > 0:
-        tk.Label(dynamic_product_options_frame_toplevel, text=f"Sauzen ({sauzen_aantal}):",
-                 font=("Arial", 11, "bold")).grid(
-            row=row_idx,
-            column=0, sticky="w",
-            pady=(8, 2))
-        row_idx += 1
-        s_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-        s_frame.grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=10)
-        # ctrl["saus_combos"].clear() # Verplaatst naar clear_opties
+        section_label(content, f"Sauzen ({sauzen_aantal}):").grid(row=row_idx, column=0, sticky="w", pady=(6, 2))
+        s_frame = tk.Frame(content, bg="#F9F9F9")
+        s_frame.grid(row=row_idx, column=1, sticky="w")
+        ctrl["saus_combos"].clear()
         for i in range(sauzen_aantal):
-            var = tk.StringVar(value=bron_sauzen[0] if bron_sauzen else "")
+            var = tk.StringVar(value=bron_sauzen[0])
             cb = ttk.Combobox(s_frame, textvariable=var, values=bron_sauzen, state="readonly", width=18,
-                              font=("Arial", 10))
-            cb.grid(row=i // 2, column=i % 2, padx=5, pady=2, sticky="w")
+                              font=("Arial", 9))
+            cb.grid(row=i // 2, column=i % 2, padx=3, pady=2, sticky="w")
             ctrl["saus_combos"].append(var)
-        row_idx += 1 + (sauzen_aantal + 1) // 2
-
-    bron_garnering = product_extras.get('garnering', extras_cat.get('garnering', {}))
-    if bron_garnering:
-        tk.Label(dynamic_product_options_frame_toplevel, text="Garnering:", font=("Arial", 11, "bold")).grid(
-            row=row_idx,
-            column=0,
-            sticky="w",
-            pady=(8, 2))
         row_idx += 1
-        g_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-        g_frame.grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=10)
-        # ctrl["garnering"].clear() # Verplaatst naar clear_opties
+
+    # Garnering
+    bron_garnering = product_extras.get('garnering', extras_cat.get('garnering', {})) if isinstance(extras_cat,
+                                                                                                    dict) else {}
+    if bron_garnering:
+        section_label(content, "Garnering:").grid(row=row_idx, column=0, sticky="nw", pady=(6, 2))
+        g_frame = tk.Frame(content, bg="#F9F9F9")
+        g_frame.grid(row=row_idx, column=1, sticky="w")
+        ctrl["garnering"].clear()
         if isinstance(bron_garnering, list):
+            # 3 kolommen
             for i, naam in enumerate(bron_garnering):
-                var = tk.BooleanVar()
-                tk.Checkbutton(g_frame, text=f"{naam}", variable=var, font=("Arial", 10)).grid(row=i // 2, column=i % 2,
-                                                                                               padx=4, pady=2,
-                                                                                               sticky="w")
+                var = tk.BooleanVar(value=False)
+                tk.Checkbutton(g_frame, text=f"{naam}", variable=var, font=("Arial", 9), bg="#F9F9F9").grid(
+                    row=i // 3, column=i % 3, padx=3, pady=2, sticky="w"
+                )
                 ctrl["garnering"].append((naam, var))
         elif isinstance(bron_garnering, dict):
             items = list(bron_garnering.items())
+            # 3 kolommen
             for i, (naam, prijs) in enumerate(items):
-                var = tk.BooleanVar()
-                tk.Checkbutton(g_frame, text=f"{naam} (+€{prijs:.2f})", variable=var, font=("Arial", 10)).grid(
-                    row=i // 2, column=i % 2, padx=4, pady=2, sticky="w")
+                var = tk.BooleanVar(value=False)
+                tk.Checkbutton(g_frame, text=f"{naam} (+€{prijs:.2f})", variable=var, font=("Arial", 9),
+                               bg="#F9F9F9").grid(
+                    row=i // 3, column=i % 3, padx=3, pady=2, sticky="w"
+                )
                 ctrl["garnering"].append((naam, var))
-        row_idx += 1 + ((len(ctrl["garnering"]) if ctrl["garnering"] else 0) + 1) // 2
-
-    tk.Label(dynamic_product_options_frame_toplevel, text="Opmerking:", font=("Arial", 11, "bold")).grid(row=row_idx,
-                                                                                                         column=0,
-                                                                                                         sticky="w",
-                                                                                                         pady=(8, 2))
-    row_idx += 1
-    opmerking_entry = tk.Entry(dynamic_product_options_frame_toplevel, textvariable=ctrl["opmerking"],
-                               font=("Arial", 10),
-                               width=40)
-    opmerking_entry.grid(row=row_idx, column=0, columnspan=2, sticky="we", padx=10, pady=2)
+        row_idx += 1
+    # Opmerking
+    section_label(content, "Opmerking:").grid(row=row_idx, column=0, sticky="w", pady=(6, 2))
+    tk.Entry(content, textvariable=ctrl["opmerking"], font=("Arial", 9), width=42).grid(
+        row=row_idx, column=1, sticky="we", pady=(2, 2)
+    )
     row_idx += 1
 
+    # Overzicht live bijwerken
     def build_extra_keuze():
         extra = {}
-        if is_half_half: extra['half_half'] = [half1_var.get(), half2_var.get()]
-        if ctrl["vlees"].get(): extra['vlees'] = ctrl["vlees"].get()
+        if is_half_half:
+            extra['half_half'] = [half1_var.get(), half2_var.get()]
+        if ctrl["vlees"].get():
+            extra['vlees'] = ctrl["vlees"].get()
         if ctrl["bijgerecht_combos"]:
-            if bijgerecht_aantal == 1:
-                extra['bijgerecht'] = ctrl["bijgerecht_combos"][0].get()
-            else:
-                extra['bijgerecht'] = [v.get() for v in ctrl["bijgerecht_combos"]]
-        if ctrl["saus_combos"]:
-            if sauzen_aantal == 1:
-                extra[saus_key_in_extras] = [ctrl["saus_combos"][0].get()]
-            else:
-                extra[saus_key_in_extras] = [v.get() for v in ctrl["saus_combos"]]
+            extra['bijgerecht'] = ctrl["bijgerecht_combos"][0].get() if len(ctrl["bijgerecht_combos"]) == 1 else [
+                v.get() for v in ctrl["bijgerecht_combos"]]
+        if ctrl["saus_combos"] and saus_key_in_extras:
+            extra[saus_key_in_extras] = [v.get() for v in ctrl["saus_combos"]]
         if ctrl["garnering"]:
             g_list = [naam for (naam, var) in ctrl["garnering"] if var.get()]
-            if g_list: extra['garnering'] = g_list
+            if g_list:
+                extra['garnering'] = g_list
         return extra
 
     def on_any_change(*_):
         p = state["gekozen_product"]
-        if not p: return
-        extra = build_extra_keuze()
-        update_right_overview(extra, p)
+        if not p:
+            return
+        update_right_overview(build_extra_keuze(), p)
 
-    # Deze trace_add calls moeten pas gebeuren nadat de StringVar/BooleanVar objecten
-    # voor de nieuwe set opties zijn aangemaakt.
     ctrl["aantal"].trace_add("write", on_any_change)
     ctrl["vlees"].trace_add("write", on_any_change)
-    # Zorg ervoor dat de lijsten niet leeg zijn voordat je erover itereert
     for var in ctrl["bijgerecht_combos"]:
-        if var: var.trace_add("write", on_any_change)
-    for var in ctrl["saus_combos"]:
-        if var: var.trace_add("write", on_any_change)
+        var.trace_add("write", on_any_change)
     for _, var in ctrl["garnering"]:
-        if var: var.trace_add("write", on_any_change)
+        var.trace_add("write", on_any_change)
     if is_half_half:
-        if half1_var: half1_var.trace_add("write", on_any_change)
-        if half2_var: half2_var.trace_add("write", on_any_change)
+        half1_var.trace_add("write", on_any_change)
+        half2_var.trace_add("write", on_any_change)
     ctrl["opmerking"].trace_add("write", on_any_change)
-
-    # Voer de eerste update uit om de overzichtsweergave te initialiseren
     on_any_change()
 
-    row_idx += 1
-    add_frame = tk.Frame(dynamic_product_options_frame_toplevel)
-    add_frame.grid(row=row_idx, column=0, columnspan=2, sticky="we", pady=10, padx=10)
-
+    # Acties
     def voeg_toe_current():
         p = state["gekozen_product"]
-        if not p: return
+        if not p:
+            return
         extra = build_extra_keuze()
 
-        extras_price = 0
-        if 'garnering' in extra and isinstance(bron_garnering, dict):
-            for garnituur_naam in extra['garnering']:
-                extras_price += bron_garnering.get(garnituur_naam, 0)
-
-        final_price = p['prijs'] + extras_price
-
         if is_half_half:
-            h1_val = half1_var.get()
-            h2_val = half2_var.get()
-            print("Pizza 1 gekozen:", repr(h1_val))
-            print("Pizza 2 gekozen:", repr(h2_val))
-            if not h1_val or not h2_val or h1_val not in [str(n) for n in range(1, 50)] or h2_val not in [str(n) for n
-                                                                                                          in
-                                                                                                          range(1, 50)]:
+            h1_val, h2_val = half1_var.get(), half2_var.get()
+            valid_vals = {str(n) for n in range(1, 50)}
+            if not (h1_val in valid_vals and h2_val in valid_vals):
                 messagebox.showwarning("Waarschuwing", "Kies twee geldige pizza-nummers voor de Half-Half optie.")
                 return
             if h1_val == h2_val:
@@ -1070,14 +989,15 @@ def render_opties(product):
                 return
             extra['half_half'] = [h1_val, h2_val]
 
-        if bron_bijgerecht and bijgerecht_aantal > 0:
+        bron_bijgerecht_local = bron_bijgerecht
+        if bron_bijgerecht_local and bijgerecht_aantal > 0:
             gekozen_bij = extra.get('bijgerecht', [])
             if isinstance(gekozen_bij, list):
                 if len(gekozen_bij) != bijgerecht_aantal or any(not x for x in gekozen_bij):
                     messagebox.showwarning("Waarschuwing", f"Kies precies {bijgerecht_aantal} bijgerechten.")
                     return
             elif not gekozen_bij:
-                messagebox.showwarning("Waarschuwing", f"Kies een bijgerecht.")
+                messagebox.showwarning("Waarschuwing", "Kies een bijgerecht.")
                 return
 
         if saus_key_in_extras and bron_sauzen and sauzen_aantal > 0:
@@ -1087,8 +1007,15 @@ def render_opties(product):
                     messagebox.showwarning("Waarschuwing", f"Kies precies {sauzen_aantal} sauzen.")
                     return
             elif not gekozen_sauzen:
-                messagebox.showwarning("Waarschuwing", f"Kies een saus.")
+                messagebox.showwarning("Waarschuwing", "Kies een saus.")
                 return
+
+        extras_price = 0
+        if 'garnering' in extra and isinstance(bron_garnering, dict):
+            for naam in extra['garnering']:
+                extras_price += bron_garnering.get(naam, 0)
+
+        final_price = p['prijs'] + extras_price
 
         bestelregels.append({
             'categorie': state["categorie"],
@@ -1101,14 +1028,32 @@ def render_opties(product):
         })
         update_overzicht()
         messagebox.showinfo("Toegevoegd", f"{ctrl['aantal'].get()} x {p['naam']} toegevoegd.")
+        on_options_window_close()
 
-        # Sluit het optievenster na het toevoegen
-        on_options_window_close()  # Roep de sluitfunctie aan
+    def on_options_window_close():
+        global current_options_popup_window
+        state["gekozen_product"] = None
+        if current_options_popup_window == options_window:
+            current_options_popup_window = None
+        options_window.destroy()
+        if opt_title:
+            opt_title.config(text="Opties Product")
 
-    tk.Button(add_frame, text="Toevoegen aan bestelling", command=voeg_toe_current, bg="#D1FFD1", width=28,
-              font=("Arial", 11, "bold")) \
-        .pack(side=tk.LEFT, expand=True)
+    options_window.protocol("WM_DELETE_WINDOW", on_options_window_close)
+    current_options_popup_window = options_window
 
+    # Knoppen RECHTSBOVEN
+    tk.Button(acties_frame, text="Toevoegen", command=voeg_toe_current,
+              bg="#D1FFD1", width=14, font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=(0, 6))
+    tk.Button(acties_frame, text="Sluiten", command=on_options_window_close,
+              bg="#FFADAD", width=10, font=("Arial", 10)).pack(side=tk.LEFT)
+
+    # Kolombreedtes
+    content.grid_columnconfigure(0, weight=0, minsize=170)
+    content.grid_columnconfigure(1, weight=1, minsize=440)
+
+
+# ... existing code ...
 
 def render_producten():
     global product_grid_holder, state, menu_data

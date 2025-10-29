@@ -2,6 +2,16 @@ import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
 
+def get_pizza_num(naam):
+    """
+    Haal cijfer voor de eerste punt uit de pizzanaam, bijvoorbeeld:
+    "12. Margherita" -> "12"
+    """
+    if '.' in naam:
+        return naam.split('.')[0].strip()
+    return naam.strip()
+
+
 
 
 
@@ -87,6 +97,9 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     # ============ 4. DETAILS BESTELLING ============
     details_lines = ["Details bestelling"]
     for item in bestelregels:
+
+        name_max = BON_WIDTH - 4 - 12
+
         aantal = item['aantal']
         prijs_per_stuk = Decimal(str(item['prijs']))
         totaal_prijs = prijs_per_stuk * aantal
@@ -118,17 +131,13 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         if "vegetarisch broodjes" in cat:
             prefix = "Broodje"
 
-
-
-        # Bepaal of het een mix schotel is
+        # Ga per bestelregel na hoe de productregel opgebouwd moet worden:
         is_mixschotel = "mix schotel" in cat or "mix-schotel" in cat or "mixschotel" in cat
 
-        # PIZZANUMMER-LOGICA: Toon alleen nummers bij pizza's
-        def get_pizza_num(naam):
-            # Haal cijfer voor de punt, werkt voor "45. Turkse Pizza" => 45
-            return naam.split('.')[0].strip()
+        extras = item.get('extras', {})
+        half_half = extras.get('half_half')
+        display_name = ""  # INITIEEL leeg voor debugging
 
-        # Speciaal voor pizza-categorieën
         if any(x in cat for x in ("small pizza", "medium pizza", "large pizza")):
             formaat = ""
             if "small" in cat:
@@ -140,21 +149,15 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             else:
                 formaat = cat.capitalize()
 
-            # Controle op half-half
-            extras = item.get('extras', {})
-            half_half = extras.get('half_half')
+            # ---- HALF-HALF PIZZA ----
             if half_half and isinstance(half_half, list) and len(half_half) == 2:
-                # Zoek nummers bij naam in menu_data (met lower() en strip())
                 gekozen_cat = [k for k in menu_data_for_drinks.keys() if k.lower() == item['categorie'].lower()]
-                if gekozen_cat:
-                    all_pizzas = menu_data_for_drinks[gekozen_cat[0]]
-                else:
-                    all_pizzas = []
+                all_pizzas = menu_data_for_drinks[gekozen_cat[0]] if gekozen_cat else []
                 nummers = []
-                for pizza_naam in half_half:  # pizza_naam is bijvoorbeeld "1", "3" etc.
+                for pizza_naam in half_half:
                     nummer = ""
-                    for p in all_pizzas:  # all_pizzas is jouw menu-lijst voor 'Medium pizza's'
-                        menu_nummer = get_pizza_num(p['naam'])  # Geeft "1", "2", "3", etc.
+                    for p in all_pizzas:
+                        menu_nummer = get_pizza_num(p['naam'])
                         if menu_nummer == str(pizza_naam).strip():
                             nummer = menu_nummer
                             break
@@ -162,11 +165,30 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
                         print(f"Waarschuwing: geen nummer gevonden voor pizza '{pizza_naam}'")
                     nummers.append(nummer if nummer else '?')
                 display_name = f"{formaat} {nummers[0]}/{nummers[1]}"
-
             else:
-                # Gewone pizza: formaat + nummer
+                # GEWONE PIZZA (ook als fallback als half_half niet klopt)
                 nummer = get_pizza_num(product_naam)
                 display_name = f"{formaat} {nummer}"
+
+        else:
+            # ---- NIET-PIZZA PRODUCTEN ----
+            if is_mixschotel:
+                display_name = product_naam.strip()
+            elif any(x in cat for x in (
+                    'schotel', 'grote-broodjes', 'klein-broodjes',
+                    'durum', 'turks-brood', 'vegetarisch broodjes'
+            )):
+                display_name = f"{prefix} {product_naam}".strip()
+            else:
+                display_name = product_naam.strip()
+
+        # ZORG dat display_name **altijd** een waarde heeft!
+        if not display_name:
+            display_name = product_naam.strip()
+
+        # Eventueel afkorten als het te lang is
+        if len(display_name) > name_max:
+            display_name = display_name[:name_max - 3] + "..."
 
         qty = f"{aantal}x"
         price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
