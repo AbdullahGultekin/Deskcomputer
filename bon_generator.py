@@ -1,7 +1,9 @@
 import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
-from main import naam_entry
+def naam_entry():
+    from main import naam_entry
+
 
 
 def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None, extras_data=None):
