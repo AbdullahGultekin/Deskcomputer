@@ -82,14 +82,18 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     address_lines = ["Leveringsadres:"]
     address_lines.extend(wrap_text(f"{klant['adres']} {klant['nr']}"))
     address_lines.extend(wrap_text(f"{klant['postcode_gemeente']}"))
-    address_lines.extend(wrap_text(klant['telefoon']))
+
+    # Telefoon + 1 lege regel erna
+    address_lines.extend(wrap_text(str(klant.get('telefoon', ''))))
+    address_lines.append("")
+
+    # Aanhef + klantnaam (indien bekend)
     address_lines.append("Dhr. / Mvr.")
-    address_lines.extend(wrap_text(klant.get("naam", "")))
-    address_lines.append("")  # Lege regel
+    klant_naam = (klant.get("naam") or "").strip()
+    if klant_naam:
+        address_lines.extend(wrap_text(klant_naam))
 
-
-
-    address_lines.append("")  # Lege regel voor details
+    address_lines.append("")  # scheiding naar details
 
     address_str = "\n".join(address_lines)
     address_for_qr = f"{klant['adres']} {klant['nr']}, {klant['postcode_gemeente']}, Belgium"
@@ -256,9 +260,12 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     # ============ 7. TE BETALEN ============
     betaald_str = "TE BETALEN!"  # Wordt vet in print functie
 
+    # Extra lege regel vóór de footer
+    footer_prefix_blank = "\n"
+
     # ============ 8. FOOTER ============
     footer_lines = [
-        "",
+        footer_prefix_blank,
         "Eet smakelijk!".center(BON_WIDTH),
         "Dank u en tot weerziens!".center(BON_WIDTH),
         "Dins- tot Zon 17.00-20.30".center(BON_WIDTH),
