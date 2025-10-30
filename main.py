@@ -431,6 +431,7 @@ def bestelling_opslaan():
         conn.close()
 
 
+# ... existing code ...
 def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     import re
     if not WIN32PRINT_AVAILABLE:
@@ -452,7 +453,7 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
             ESC = b'\x1b'
             GS = b'\x1d'
 
-            # Header
+            # Header (grote titel en vaste header-blok)
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')
             win32print.WritePrinter(hprinter, b'PITA PIZZA NAPOLI\n')
@@ -471,138 +472,91 @@ info@pitapizzanapoli.be
 """
             win32print.WritePrinter(hprinter, header_info.encode('cp437', errors='replace'))
 
+            # Splits generator-output in regels
             bon_lines = full_bon_text_for_print.split('\n')
-            bonnummer_idx = bezorgtijd_idx = address_idx = dhr_mvr_idx = details_idx = 0
+
+            # Indices van blokken zoeken
+            bonnummer_idx = bezorgtijd_idx = address_idx = details_idx = -1
             for i, line in enumerate(bon_lines):
-                if 'Bonnummer' in line: bonnummer_idx = i
-                if 'Bezorgtijd:' in line: bezorgtijd_idx = i
-                if 'Leveringsadres:' in line: address_idx = i
-                if ('Dhr.' in line or 'Mvr.' in line): dhr_mvr_idx = i
-                if 'Details bestelling' in line: details_idx = i; break
+                if bonnummer_idx == -1 and 'Bonnummer' in line:
+                    bonnummer_idx = i
+                if bezorgtijd_idx == -1 and 'Bezorgtijd' in line:
+                    bezorgtijd_idx = i
+                if address_idx == -1 and 'Leveringsadres:' in line:
+                    address_idx = i
+                if details_idx == -1 and 'Details bestelling' in line:
+                    details_idx = i
 
-            # Bestelinfo printen, tot bezorgtijd
+            # 1) Bestelinfo (van Bonnummer t/m de lege regel ná Bezorgtijd)
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-            win32print.WritePrinter(hprinter, '\n'.join(bon_lines[bonnummer_idx:bezorgtijd_idx]).encode('cp437',
-                                                                                                        errors='replace'))
+            info_end = bezorgtijd_idx + 2 if bezorgtijd_idx >= 0 else bonnummer_idx + 1
+            info_block = '\n'.join(bon_lines[bonnummer_idx:info_end])
+            win32print.WritePrinter(hprinter, info_block.encode('cp437', errors='replace'))
 
-            # Bezorgtijd vet drukken
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-            win32print.WritePrinter(hprinter, bon_lines[bezorgtijd_idx].encode('cp437', errors='replace'))
-            win32print.WritePrinter(hprinter, b'\n')
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
-            win32print.WritePrinter(hprinter, b'\n')
+            # 2) Adres-blok exact uit generator (inclusief naam en lege regels)
+            if address_idx >= 0 and details_idx > address_idx:
+                addr_block = '\n'.join(bon_lines[address_idx:details_idx])
+                win32print.WritePrinter(hprinter, (addr_block + '\n').encode('cp858', errors='replace'))
 
-            # Vul klantnaam vooraf; direct uit invoerveld of database!
-            klantnaam = naam_entry.get() if 'naam_entry' in locals() else ""  # of database etc.
-
-            win32print.WritePrinter(hprinter, 'Leveringsadres:\n'.encode('cp858'))
-
-            # Klantnaam expliciet printen
-            if klantnaam:
-                win32print.WritePrinter(hprinter, f'{klantnaam}\n'.encode('cp858'))
-
-            # Daarna het adres (zoals je nu doet, maar zonder de slice voor klantnaam)
-            adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
-            address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
-            for addr_line in address_content:
-                win32print.WritePrinter(hprinter, addr_line.encode('cp858', errors='replace'))
-                win32print.WritePrinter(hprinter, b'\n')
-
-            # Bestel-details met tussen elk product een lijn (maar géén dubbele totalen of "te betalen")
-            # Selecteer CP858 voor eurocompatibiliteit
-            win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # 0x13 = CP858, voor veel printers
-
-            if details_idx > 0:
-                details_end_idx = len(bon_lines)
-                for i in range(details_idx, len(bon_lines)):
-                    if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
-                        details_end_idx = i
-                        break
-                win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
-                win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
-                current_item_lines = []
-                for line in bon_lines[details_idx + 1:details_end_idx]:
-                    stripped_line = line.strip()
-                    # PRODUCTREGEL: nieuwe hoofdregel, begint met 'x'
-                    if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
-                        # Print vorig productblok (met extras etc. netjes onder het hoofdproduct)
-                        if current_item_lines:
-                            win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
-                            current_item_lines = []
-                        # Hoofdproductregel zonder pijl of inspringing
-                        current_item_lines.append(line.replace('?', '€'))
-                    else:
-                        # Geen 'TE BETALEN!' in details
-                        if "TE BETALEN" in line:
-                            continue
-                        # Extras e.d. netjes inspringen
-                        if stripped_line:
-                            current_item_lines.append(f"> {stripped_line}")
-                # Print het laatste productblok
-                if current_item_lines:
-                    win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                    win32print.WritePrinter(hprinter, b'\n')
-
-            # Enkel de laatste "Totaal" met € printen en vet/groter/aan rechterkant (center)
-            ESC = b'\x1B'
-            GS = b'\x1D'
-            totaal_line = ""
-            for i in range(len(bon_lines) - 1, -1, -1):
-                if 'Totaal' in bon_lines[i] and ('€' in bon_lines[i] or '?' in bon_lines[i]):
-                    totaal_line = bon_lines[i]
+            # 3) Details-blok exact uit generator, met nette opmaak
+            # Zoek einde van details (vlak vóór BTW/“Tarief” of vóór footer)
+            tarief_idx = -1
+            for i in range(details_idx, len(bon_lines)):
+                if bon_lines[i].strip().startswith('Tarief') or (
+                        bon_lines[i].strip().startswith('-') and i > details_idx + 1):
+                    tarief_idx = i - 1  # details eindigen vóór tarief/onderlijn
                     break
+            if tarief_idx == -1:
+                # fallback: alles tot laatste "Totaal ..." regel uit details-blok
+                tarief_idx = len(bon_lines) - 1
 
-            if totaal_line:
-                # Euroteken corrigeren: Unicode, fallback bytes en vraagtekens omzetten
-                totaal_line = totaal_line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€')
+            # Print 'Details bestelling' titel en scheidingslijn
+            win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
+            win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
 
+            # Print regels tussen de titel (details_idx) en tarief_idx
+            for line in bon_lines[details_idx + 1:tarief_idx + 1]:
+                win32print.WritePrinter(hprinter, (line.replace('?', '€') + '\n').encode('cp858', errors='replace'))
+
+            # 4) Totaalregel (laatste "Totaal ..." uit de generator)
+            last_total_line = ""
+            for i in range(len(bon_lines) - 1, -1, -1):
+                if bon_lines[i].strip().startswith('Totaal') and ('€' in bon_lines[i] or '?' in bon_lines[i]):
+                    last_total_line = bon_lines[i].replace('?', '€')
+                    break
+            if last_total_line:
                 win32print.WritePrinter(hprinter, b'\n')
-                # Centreren ESC a 01
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-                # Vet ESC E 01
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-                # Tekengrootte dubbel GS ! 01
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
-                # Gebruik cp858 als codepage voor correcte euro (indien nodig cp1252 testen)
-                win32print.WritePrinter(hprinter, totaal_line.encode('cp858', errors='replace'))
-                win32print.WritePrinter(hprinter, b'\n')
-                # Reset tekstgrootte/uitlijning/vet
+                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # center
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # bold
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # double height
+                win32print.WritePrinter(hprinter, (last_total_line + '\n').encode('cp858', errors='replace'))
+                # reset
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
 
-            # GEEN "Eet smakelijk!" dubbel! Eénmaal centraal onder de totaalregel
-            footer = """
-"""
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
-            win32print.WritePrinter(hprinter, footer.encode('cp437', errors='replace'))
-
-            ESC = b'\x1B'
-            GS = b'\x1D'
-
-            # Centered, grote/vette "TE BETALEN!"
+            # 5) "TE BETALEN!" + expliciete lege regel erna
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
             win32print.WritePrinter(hprinter, b'TE BETALEN!\n')
-
-            # Reset grootte/vet, blijven gecentreerd
+            win32print.WritePrinter(hprinter, b'\n')  # lege regel na "TE BETALEN!"
+            # reset vet/grootte, gecentreerd laten voor footer
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
 
-            # Centraal en vet "Eet smakelijk"
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-            win32print.WritePrinter(hprinter, b'Eet smakelijk\n')
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
+            # 6) Footer exact uit generator (de volledige footer_str is aan het einde)
+            # Neem de footer door vanaf de regel met "Eet smakelijk!" tot einde
+            footer_start = -1
+            for i, line in enumerate(bon_lines):
+                if 'Eet smakelijk!' in line:
+                    footer_start = i
+                    break
+            if footer_start >= 0:
+                footer_block = '\n'.join(bon_lines[footer_start:])
+                win32print.WritePrinter(hprinter, footer_block.encode('cp858', errors='replace'))
 
-            # Centraal openingsuren, onder "Eet smakelijk"
-            win32print.WritePrinter(hprinter, b'Van Dins- tot Zon\n vanaf 17 u Tot 20u30\n')
-
-            # Reset uitlijning
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-            # QR code gecentreerd, helemaal onderaan
+            # QR (ongewijzigd)
             if address_for_qr:
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
@@ -616,6 +570,7 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
 
+            # Cut
             win32print.WritePrinter(hprinter, b'\n\n\n')
             win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
             win32print.EndPagePrinter(hprinter)
@@ -626,6 +581,8 @@ info@pitapizzanapoli.be
     except Exception as e:
         messagebox.showerror("Fout bij afdrukken", f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}")
 
+
+# ... existing code ...
 
 def find_printer_usb_ids():
     """
