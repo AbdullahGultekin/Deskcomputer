@@ -453,7 +453,7 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
             ESC = b'\x1b'
             GS = b'\x1d'
 
-            # Header (grote titel en vaste header-blok)
+            # Kop (ongewijzigd)
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')
             win32print.WritePrinter(hprinter, b'PITA PIZZA NAPOLI\n')
@@ -470,93 +470,60 @@ www.pitapizzanapoli.be
 info@pitapizzanapoli.be
 
 """
-            win32print.WritePrinter(hprinter, header_info.encode('cp437', errors='replace'))
+            win32print.WritePrinter(hprinter, header_info.encode('cp858', errors='replace'))
 
-            # Splits generator-output in regels
             bon_lines = full_bon_text_for_print.split('\n')
 
-            # Indices van blokken zoeken
-            bonnummer_idx = bezorgtijd_idx = address_idx = details_idx = -1
+            # Blokindices zoeken
+            idx_info = idx_addr = idx_details = idx_footer = -1
             for i, line in enumerate(bon_lines):
-                if bonnummer_idx == -1 and 'Bonnummer' in line:
-                    bonnummer_idx = i
-                if bezorgtijd_idx == -1 and 'Bezorgtijd' in line:
-                    bezorgtijd_idx = i
-                if address_idx == -1 and 'Leveringsadres:' in line:
-                    address_idx = i
-                if details_idx == -1 and 'Details bestelling' in line:
-                    details_idx = i
+                if idx_info == -1 and line.strip().startswith("Soort bestelling"):
+                    idx_info = i
+                if idx_addr == -1 and line.strip().startswith("Leveringsadres:"):
+                    idx_addr = i
+                if idx_details == -1 and line.strip().startswith("Details bestelling"):
+                    idx_details = i
+                if idx_footer == -1 and "Eet smakelijk!" in line:
+                    idx_footer = i
 
-            # 1) Bestelinfo (van Bonnummer t/m de lege regel ná Bezorgtijd)
-            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-            info_end = bezorgtijd_idx + 2 if bezorgtijd_idx >= 0 else bonnummer_idx + 1
-            info_block = '\n'.join(bon_lines[bonnummer_idx:info_end])
-            win32print.WritePrinter(hprinter, info_block.encode('cp437', errors='replace'))
+            # 1) Info-blok: vanaf Soort bestelling t/m lege regel na Bezorgtijd
+            # Vind eerste lege regel na Bezorgtijd
+            info_end = idx_addr if idx_addr > idx_info else idx_info
+            for i in range(idx_info, len(bon_lines)):
+                if i > idx_info and bon_lines[i].strip() == "":
+                    info_end = i + 1
+                    break
+            info_block = '\n'.join(bon_lines[idx_info:info_end])
+            win32print.WritePrinter(hprinter, info_block.encode('cp858', errors='replace'))
 
             # 2) Adres-blok exact uit generator (inclusief naam en lege regels)
-            if address_idx >= 0 and details_idx > address_idx:
-                addr_block = '\n'.join(bon_lines[address_idx:details_idx])
-                win32print.WritePrinter(hprinter, (addr_block + '\n').encode('cp858', errors='replace'))
+            if idx_addr >= 0 and idx_details > idx_addr:
+                addr_block = '\n'.join(bon_lines[idx_addr:idx_details])
+                win32print.WritePrinter(hprinter, addr_block.encode('cp858', errors='replace'))
 
-            # 3) Details-blok exact uit generator, met nette opmaak
-            # Zoek einde van details (vlak vóór BTW/“Tarief” of vóór footer)
-            tarief_idx = -1
-            for i in range(details_idx, len(bon_lines)):
-                if bon_lines[i].strip().startswith('Tarief') or (
-                        bon_lines[i].strip().startswith('-') and i > details_idx + 1):
-                    tarief_idx = i - 1  # details eindigen vóór tarief/onderlijn
-                    break
-            if tarief_idx == -1:
-                # fallback: alles tot laatste "Totaal ..." regel uit details-blok
-                tarief_idx = len(bon_lines) - 1
+            # 3) Details-blok exact uit generator, inclusief streepjes en totaalregel
+            # Zoek eind van details (vlak vóór footer of vóór BTW/“Tarief”)
+            end_details = idx_footer if idx_footer > idx_details else len(bon_lines)
+            # Neem tot vlak vóór footer
+            details_block = '\n'.join(bon_lines[idx_details:end_details]).replace('?', '€')
+            win32print.WritePrinter(hprinter, details_block.encode('cp858', errors='replace'))
 
-            # Print 'Details bestelling' titel en scheidingslijn
-            win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
-            win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
-
-            # Print regels tussen de titel (details_idx) en tarief_idx
-            for line in bon_lines[details_idx + 1:tarief_idx + 1]:
-                win32print.WritePrinter(hprinter, (line.replace('?', '€') + '\n').encode('cp858', errors='replace'))
-
-            # 4) Totaalregel (laatste "Totaal ..." uit de generator)
-            last_total_line = ""
-            for i in range(len(bon_lines) - 1, -1, -1):
-                if bon_lines[i].strip().startswith('Totaal') and ('€' in bon_lines[i] or '?' in bon_lines[i]):
-                    last_total_line = bon_lines[i].replace('?', '€')
-                    break
-            if last_total_line:
-                win32print.WritePrinter(hprinter, b'\n')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # center
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # bold
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # double height
-                win32print.WritePrinter(hprinter, (last_total_line + '\n').encode('cp858', errors='replace'))
-                # reset
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-
-            # 5) "TE BETALEN!" + expliciete lege regel erna
+            # 4) “TE BETALEN!” + lege regel
             win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
             win32print.WritePrinter(hprinter, b'TE BETALEN!\n')
-            win32print.WritePrinter(hprinter, b'\n')  # lege regel na "TE BETALEN!"
-            # reset vet/grootte, gecentreerd laten voor footer
+            win32print.WritePrinter(hprinter, b'\n')
+            # reset vet/grootte, gecentreerd laten is oké
             win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
 
-            # 6) Footer exact uit generator (de volledige footer_str is aan het einde)
-            # Neem de footer door vanaf de regel met "Eet smakelijk!" tot einde
-            footer_start = -1
-            for i, line in enumerate(bon_lines):
-                if 'Eet smakelijk!' in line:
-                    footer_start = i
-                    break
-            if footer_start >= 0:
-                footer_block = '\n'.join(bon_lines[footer_start:])
+            # 5) Footer-blok exact uit generator
+            if idx_footer >= 0:
+                footer_block = '\n'.join(bon_lines[idx_footer:]).replace('?', '€')
                 win32print.WritePrinter(hprinter, footer_block.encode('cp858', errors='replace'))
 
-            # QR (ongewijzigd)
+            # QR ongewijzigd
             if address_for_qr:
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
