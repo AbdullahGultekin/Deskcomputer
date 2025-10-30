@@ -100,50 +100,50 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
 
     # ============ 4. DETAILS BESTELLING ============
     details_lines = ["Details bestelling"]
-    for item in bestelregels:
 
+    # Groepeer/sorteer regels in gewenste volgorde
+    def group_key(item):
+        cat = (item.get('categorie') or '').lower()
+        if "pizza" in cat:
+            return (0, cat)
+        if "schotel" in cat:
+            return (1, cat)
+        if any(x in cat for x in ("brood", "durum", "turks", "kapsalon")):
+            return (2, cat)
+        if "pasta" in cat or "alforno" in cat:
+            return (3, cat)
+        return (4, cat)
+
+    bestelregels_sorted = sorted(bestelregels, key=group_key)
+
+    for item in bestelregels_sorted:
         name_max = BON_WIDTH - 4 - 12
-
         aantal = item['aantal']
         prijs_per_stuk = Decimal(str(item['prijs']))
         totaal_prijs = prijs_per_stuk * aantal
 
         product_naam = item['product']
-        cat = item['categorie'].lower()
+        cat = (item['categorie'] or '').lower()
         prefix = ""
 
-        if "small" in cat:
-            prefix = "Small"
-        if "medium" in cat:
-            prefix = "Medium"
-        if "large" in cat:
-            prefix = "Large"
-        if "grote-broodjes" in cat:
-            prefix = "Groot"
-        if "klein-broodjes" in cat:
-            prefix = "Klein"
-        if "turks-brood" in cat:
-            prefix = "Turks"
-        if "durum" in cat:
-            prefix = "Durum"
-        if "pasta" in cat:
-            prefix = "Pasta"
-        if "schotel" in cat and "mix schotel" not in cat:
-            prefix = "Schotel"
-        if "kapsalon" in cat:
-            prefix = "Kapsalon"
-        if "vegetarisch broodjes" in cat:
-            prefix = "Broodje"
+        if "small" in cat: prefix = "Small"
+        if "medium" in cat: prefix = "Medium"
+        if "large" in cat: prefix = "Large"
+        if "grote-broodjes" in cat: prefix = "Groot"
+        if "klein-broodjes" in cat: prefix = "Klein"
+        if "turks-brood" in cat: prefix = "Turks"
+        if "durum" in cat: prefix = "Durum"
+        if "pasta" in cat: prefix = "Pasta"
+        if "schotel" in cat and "mix schotel" not in cat: prefix = "Schotel"
+        if "kapsalon" in cat: prefix = "Kapsalon"
+        if "vegetarisch broodjes" in cat: prefix = "Broodje"
 
-        # Ga per bestelregel na hoe de productregel opgebouwd moet worden:
         is_mixschotel = "mix schotel" in cat or "mix-schotel" in cat or "mixschotel" in cat
-
         extras = item.get('extras', {})
         half_half = extras.get('half_half')
-        display_name = ""  # INITIEEL leeg voor debugging
+        display_name = ""
 
-        if any(x in cat for x in ("small pizza", "medium pizza", "large pizza")):
-            formaat = ""
+        if any(x in cat for x in ("small pizza", "medium pizza", "large pizza", "pizza")):
             if "small" in cat:
                 formaat = "Small"
             elif "medium" in cat:
@@ -151,12 +151,12 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
             elif "large" in cat:
                 formaat = "Large"
             else:
-                formaat = cat.capitalize()
+                formaat = "Pizza"
 
-            # ---- HALF-HALF PIZZA ----
-            if half_half and isinstance(half_half, list) and len(half_half) == 2:
-                gekozen_cat = [k for k in menu_data_for_drinks.keys() if k.lower() == item['categorie'].lower()]
-                all_pizzas = menu_data_for_drinks[gekozen_cat[0]] if gekozen_cat else []
+            if half_half and isinstance(half_half, list) and len(half_half) == 2 and menu_data_for_drinks:
+                gekozen_cat = [k for k in (menu_data_for_drinks or {}).keys()
+                               if k.lower() == (item['categorie'] or "").lower()]
+                all_pizzas = (menu_data_for_drinks or {}).get(gekozen_cat[0], []) if gekozen_cat else []
                 nummers = []
                 for pizza_naam in half_half:
                     nummer = ""
@@ -165,48 +165,32 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
                         if menu_nummer == str(pizza_naam).strip():
                             nummer = menu_nummer
                             break
-                    if not nummer:
-                        print(f"Waarschuwing: geen nummer gevonden voor pizza '{pizza_naam}'")
                     nummers.append(nummer if nummer else '?')
                 display_name = f"{formaat} {nummers[0]}/{nummers[1]}"
             else:
-                # GEWONE PIZZA (ook als fallback als half_half niet klopt)
                 nummer = get_pizza_num(product_naam)
                 display_name = f"{formaat} {nummer}"
-
         else:
-            # ---- NIET-PIZZA PRODUCTEN ----
             if is_mixschotel:
                 display_name = product_naam.strip()
-            elif any(x in cat for x in (
-                    'schotel', 'grote-broodjes', 'klein-broodjes',
-                    'durum', 'turks-brood', 'vegetarisch broodjes'
-            )):
+            elif any(x in cat for x in ('schotel', 'grote-broodjes', 'klein-broodjes',
+                                        'durum', 'turks-brood', 'vegetarisch broodjes', 'kapsalon')):
                 display_name = f"{prefix} {product_naam}".strip()
             else:
                 display_name = product_naam.strip()
 
-        # ZORG dat display_name **altijd** een waarde heeft!
         if not display_name:
             display_name = product_naam.strip()
 
-        # Eventueel afkorten als het te lang is
         if len(display_name) > name_max:
             display_name = display_name[:name_max - 3] + "..."
 
         qty = f"{aantal}x"
         price = f"€ {totaal_prijs:.2f}".replace('.', ',') + " C"
-        # Fix alle euro-gerelateerde tekens of vraagtekens in de prijs
         price = price.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€', 1)
 
-        name_max = BON_WIDTH - 4 - 12
-        if len(display_name) > name_max:
-            display_name = display_name[:name_max - 3] + "..."
-
         line = f"{qty:3s} {display_name:<{name_max}s}{price:>12s}"
-        # Forceer ook hier in elk geval echte euro (voor de zekerheid)
         line = line.replace('\u20ac', '€').replace('\xe2\x82\xac', '€').replace('?', '€', 1)
-
         details_lines.append(line)
 
         # Extra's in bullets
@@ -226,7 +210,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
                 for extra in extras['pasta_extras']:
                     details_lines.append(f"> {extra.upper()}")
 
-        # Opmerking
         if item.get('opmerking'):
             details_lines.append(f"> {item['opmerking']}")
 
