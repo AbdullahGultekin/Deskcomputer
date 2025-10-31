@@ -1238,15 +1238,15 @@ def setup_menu_interface():
 def test_bestellingen_vullen():
     global bestelregels
     telefoon_entry.delete(0, tk.END)
-    telefoon_entry.insert(0, "0499123456")
+    telefoon_entry.insert(0, "037757228")
 
     adres_entry.delete(0, tk.END)
-    adres_entry.insert(0, "Teststraat")
+    adres_entry.insert(0, "Brugstraat")
 
     nr_entry.delete(0, tk.END)
-    nr_entry.insert(0, "42")
+    nr_entry.insert(0, "12")
 
-    postcode_var.set("9120 Beveren")
+    postcode_var.set("9120 Vrasene")
 
     opmerkingen_entry.delete(0, tk.END)
     opmerkingen_entry.insert(0, "Dit is een testbestelling")
@@ -1256,14 +1256,14 @@ def test_bestellingen_vullen():
             'categorie': 'Large pizza\'s',
             'product': 'Margherita',
             'aantal': 2,
-            'prijs': 9.00,
+            'prijs': 20.00,
             'extras': {'garnering': ['Champignons', 'Extra kaas']}
         },
         {
             'categorie': 'schotels',
             'product': 'Natuur',
             'aantal': 1,
-            'prijs': 13.50,
+            'prijs': 20.00,
             'extras': {
                 'vlees': 'Pita',
                 'bijgerecht': 'Frieten',
@@ -1274,7 +1274,7 @@ def test_bestellingen_vullen():
             'categorie': 'mix schotels',
             'product': 'Napoli speciaal 2 personen',
             'aantal': 1,
-            'prijs': 25.00,
+            'prijs': 45.00,
             'extras': {
                 'bijgerecht': ['Frieten', 'Brood'],
                 'sauzen': ['Looksaus', 'Samurai', 'Cocktail', 'Andalouse']
