@@ -1,5 +1,6 @@
 import datetime
 from decimal import Decimal, ROUND_HALF_UP
+import json
 
 
 def get_pizza_num(naam):
@@ -115,6 +116,29 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         return (4, cat)
 
     bestelregels_sorted = sorted(bestelregels, key=group_key)
+
+    # NIEUW: Groepeer dezelfde producten (zelfs als apart gekozen) samen
+    merged_rules = {}
+    for item in bestelregels_sorted:
+        # Maak een unieke sleutel voor elk product met dezelfde extras
+        extras_key = json.dumps(item.get('extras', {}), sort_keys=True)
+        product_key = (item['categorie'], item['product'], extras_key, item.get('opmerking', ''))
+
+        if product_key not in merged_rules:
+            merged_rules[product_key] = {
+                'categorie': item['categorie'],
+                'product': item['product'],
+                'aantal': 0,
+                'prijs': item['prijs'],
+                'extras': item.get('extras', {}),
+                'opmerking': item.get('opmerking', '')
+            }
+
+        # Tel het aantal bij elkaar op
+        merged_rules[product_key]['aantal'] += item['aantal']
+
+    # Converteer terug naar lijst met behoud van volgorde
+    bestelregels_merged = list(merged_rules.values())
 
     for item in bestelregels_sorted:
         name_max = BON_WIDTH - 4 - 12

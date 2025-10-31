@@ -102,10 +102,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     bon_display.config(state='disabled')  # Maak de tekst alleen-lezen
 
     def print_bon_action():
-        if messagebox.askyesno("Bevestiging", "Wilt u deze bestelling opslaan en afdrukken?"):
-            # Roep de callback aan met zowel tekst als QR-data
-            save_and_print_callback(full_bon_text_for_print, address_for_qr)
-            bon_win.destroy()
+        # De extra bevestiging is verwijderd. De actie wordt direct uitgevoerd.
+        save_and_print_callback(full_bon_text_for_print, address_for_qr)
+        bon_win.destroy()
 
     # Knoppen voor Printen en Sluiten
     button_frame = Frame(main_bon_frame, pady=5)

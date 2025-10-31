@@ -321,7 +321,7 @@ def _get_current_order_data():
         "adres": adres_entry.get(),
         "nr": nr_entry.get(),
         "postcode_gemeente": postcode_var.get(),
-        "opmerking": ctrl["opmerking"].get()
+        "opmerking": opmerkingen_entry.get().strip()
     }
 
     # Bonnummer wordt pas bij opslaan definitief, maar we hebben een tijdelijke nodig voor preview
@@ -353,7 +353,7 @@ def voeg_klant_toe_of_update(telefoon, adres, nr, postcode_plaats, naam):
 
 
 # REFACtORED: bestelling_opslaan zal nu alleen opslaan en de UI opschonen, NIET direct printen of preview tonen
-def bestelling_opslaan():
+def bestelling_opslaan(show_confirmation=True):
     global bestelregels
 
     klant_data, order_items, _ = _get_current_order_data()
@@ -361,7 +361,7 @@ def bestelling_opslaan():
         return False, None  # Geef aan dat opslaan mislukt is en geen bontekst
 
     telefoon = klant_data["telefoon"]
-    naam = naam_entry.get().strip() if 'naam_entry' in globals() else ctrl["opmerking"].get()
+    naam = klant_data["naam"]
     voeg_klant_toe_of_update(
         telefoon=klant_data["telefoon"],
         adres=klant_data["adres"],
@@ -404,13 +404,14 @@ def bestelling_opslaan():
         database.update_klant_statistieken(klant_id)
         database.boek_voorraad_verbruik(bestelling_id)
 
-        messagebox.showinfo("Bevestiging", "Bestelling succesvol opgeslagen!")
 
         # UI opschonen na bestelling
         telefoon_entry.delete(0, tk.END)
+        naam_entry.delete(0, tk.END)
         adres_entry.delete(0, tk.END)
         nr_entry.delete(0, tk.END)
         postcode_var.set(postcodes[0])
+        opmerkingen_entry.delete(0, tk.END)
         ctrl["opmerking"].set("")
         bestelregels.clear()
         update_overzicht()
@@ -439,7 +440,7 @@ def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
         messagebox.showerror("Platform Error", "Windows printer support niet beschikbaar.")
         return
 
-    success, bonnummer = bestelling_opslaan()
+    success, bonnummer = bestelling_opslaan(show_confirmation=False)
     if not success:
         messagebox.showerror("Fout", "Bestelling kon niet worden opgeslagen.")
         return
@@ -515,23 +516,37 @@ info@pitapizzanapoli.be
             if klantnaam:
                 win32print.WritePrinter(hprinter, (klantnaam + '\n').encode('cp858', errors='replace'))
 
-            # Daarna het adres
+            ## Daarna het adres
             adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
             address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
+            # Maak adres vet en 2x groter
+            ESC = b'\x1b'
+            GS = b'\x1d'
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # Dubbele hoogte+breedte
             for addr_line in address_content:
                 win32print.WritePrinter(hprinter, addr_line.encode('cp858', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
+            # Reset stijl
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
             # Bestel-details
             win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # CP858
             if details_idx > 0:
+                # bereken einde van details sectie
                 details_end_idx = len(bon_lines)
                 for i in range(details_idx, len(bon_lines)):
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
                         break
+                # "Details bestelling" vet
+                ESC = b'\x1b'
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                 win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                 win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
+
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
                     stripped_line = line.strip()
@@ -620,7 +635,8 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, GS + b'V' + b'\x00')
             win32print.EndPagePrinter(hprinter)
             win32print.EndDocPrinter(hprinter)
-            messagebox.showinfo("Print", f"Bon {bonnummer} is naar printer gestuurd!")
+            messagebox.showinfo("Voltooid", f"Bon {bonnummer} opgeslagen en naar printer gestuurd!")
+
         finally:
             win32print.ClosePrinter(hprinter)
     except Exception as e:

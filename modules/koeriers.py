@@ -170,6 +170,7 @@ def open_koeriers(root):
 
     # Afrekening per koerier + styling
     totals_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
+    subtotaal_totaal_var = tk.DoubleVar(value=0.0)
     eind_totals_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
     extra_km_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
     extra_uur_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
@@ -191,6 +192,13 @@ def open_koeriers(root):
                 continue
         for k in koeriers:
             eind_totals_var[k].set(totals_var[k].get() + STARTGELD)
+
+            # Totaal van alle subtotaal van koeriers berekenen
+            totaal_bestellingen_geld = sum(var.get() for var in totals_var.values())
+            subtotaal_totaal_var.set(round(totaal_bestellingen_geld, 2))
+
+            for k in koeriers:
+                eind_totals_var[k].set(totals_var[k].get() + STARTGELD)
 
     def herbereken_afrekening(naam):
         try:
@@ -254,6 +262,17 @@ def open_koeriers(root):
                                          lambda *_, n=naam: (herbereken_afrekening(n), herbereken_totaal_betaald()))
         eind_totals_var[naam].trace_add("write",
                                         lambda *_, n=naam: (herbereken_afrekening(n), herbereken_totaal_betaald()))
+        totals_var[naam].trace_add("write",)
+
+        # Totaalrij voor subtotalen
+        subtotal_row_idx = len(koeriers) + 1
+        tk.Label(totals_frame, text="Totaal Bestellingen", font=("Arial", 11, "bold"), anchor="e", bg="#D2F2FF").grid(
+            row=subtotal_row_idx, column=0, sticky="ew", padx=5, pady=(8, 4))
+        tk.Label(totals_frame, textvariable=subtotaal_totaal_var, font=("Arial", 11, "bold"), anchor="e",
+                 bg="#D2F2FF").grid(row=subtotal_row_idx, column=1, sticky="ew", padx=5, pady=(8, 4))
+
+        sep = tk.Label(totals_frame, text=" ", bg="#D2F2FF")
+        sep.grid(row=len(koeriers) + 2, column=0, columnspan=9, sticky="ew", padx=2)
 
     for colindex in range(9):
         totals_frame.grid_columnconfigure(colindex, weight=1)
