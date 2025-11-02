@@ -9,10 +9,10 @@ def open_koeriers(root):
     KM_TARIEF = 0.25
     UUR_TARIEF = 10.0
 
-    win = tk.Toplevel(root)
-    win.title("Koeriers")
-    win.geometry("1200x680")
-    win.minsize(1100, 600)
+    # EMBED in tab i.p.v. Toplevel
+    win = root
+    for w in win.winfo_children():
+        w.destroy()
 
     paned = tk.PanedWindow(win, orient=tk.HORIZONTAL, sashrelief=tk.RAISED, sashpad=4)
     paned.pack(fill=tk.BOTH, expand=True)
@@ -411,20 +411,20 @@ def open_koeriers(root):
                 continue
             gemeente = ' '.join(bestelling['plaats'].split()[1:]) if ' ' in bestelling['plaats'] else bestelling[
                 'plaats']
-            base_tag = "row_a" if idx % 2 == 0 else "row_b"
-            extra_tags = [base_tag]
-            if not (bestelling['koerier_naam'] or ""):
-                extra_tags.append("unassigned")
-            else:
-                # dynamische tagnaam per koerier
-                kg = f"koerier_{(bestelling['koerier_naam'] or '').replace(' ', '_')}"
-                if not style.lookup(kg, "background"):
-                    # registreer éénmalig met zachte kleur
-                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(bestelling['koerier_naam'], "#FFFFFF"))
-                extra_tags.append(kg)
 
-            # Badge: zet “(geen)” als koerier leeg
-            koerier_cell = bestelling['koerier_naam'] or "(geen)"
+            koerier_naam = bestelling['koerier_naam'] or ""
+            if koerier_naam:
+                kg = f"koerier_{koerier_naam.replace(' ', '_')}"
+                if not style.lookup(kg, "background"):
+                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#FFFFFF"),
+                                       foreground="#000000")
+                tags = (kg,)
+            else:
+                # Alleen zebra kleur als geen koerier
+                base_tag = "row_a" if idx % 2 == 0 else "row_b"
+                tags = ("unassigned", base_tag)
+
+            koerier_cell = koerier_naam if koerier_naam else "(geen)"
 
             tree.insert(
                 "", tk.END, iid=bestelling['id'],
@@ -437,7 +437,7 @@ def open_koeriers(root):
                     f"{bestelling['totaal']:.2f}",
                     koerier_cell
                 ),
-                tags=tuple(extra_tags)
+                tags=tags
             )
 
         # Hover/selection highlight

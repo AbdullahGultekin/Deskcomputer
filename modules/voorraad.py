@@ -5,10 +5,11 @@ import database
 
 
 def open_voorraad(root):
-    win = tk.Toplevel(root)
-    win.title("Voorraad Management")
-    win.geometry("1100x720")
-    win.minsize(950, 620)
+    # root is tab-frame; embed i.p.v. Toplevel
+    win = root
+
+    for w in win.winfo_children():
+        w.destroy()
 
     paned = tk.PanedWindow(win, orient=tk.HORIZONTAL, sashrelief=tk.RAISED, sashpad=4)
     paned.pack(fill=tk.BOTH, expand=True)
@@ -179,48 +180,6 @@ def open_voorraad(root):
                 r["categorie"], r["product"], r["ingredient"], f"{r['hoeveelheid_per_stuk']:.3f}", r["eenheid"]
             ))
         conn.close()
-
-    def nieuwe_receptregel():
-        # kleine dialoog via simpledialog
-        cat = simpledialog.askstring("Receptuur", "Categorie (exact zoals in menu/bestelregels):")
-        if not cat: return
-        prod = simpledialog.askstring("Receptuur", "Product (exact zoals in menu/bestelregels):")
-        if not prod: return
-
-        # kies ingrediënt uit lijst
-        conn = database.get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, naam, eenheid FROM ingredienten ORDER BY naam")
-        items = cur.fetchall()
-        conn.close()
-        if not items:
-            messagebox.showwarning("Receptuur", "Geen ingrediënten aangemaakt.")
-            return
-        keuze = simpledialog.askstring("Receptuur",
-                                       "Ingrediënt naam (exact):\n" + "\n".join([i["naam"] for i in items]))
-        if not keuze: return
-        match = next((i for i in items if i["naam"] == keuze), None)
-        if not match:
-            messagebox.showwarning("Receptuur", "Ingrediënt niet gevonden.")
-            return
-        try:
-            qty = float(
-                simpledialog.askstring("Receptuur", f"Hoeveelheid per stuk ({match['eenheid']}):").replace(",", "."))
-        except Exception:
-            return
-
-        try:
-            conn = database.get_db_connection()
-            cur = conn.cursor()
-            cur.execute("""
-                INSERT OR REPLACE INTO recepturen (categorie, product, ingredient_id, hoeveelheid_per_stuk)
-                VALUES (?, ?, ?, ?)
-            """, (cat.strip(), prod.strip(), match["id"], qty))
-            conn.commit()
-            conn.close()
-            laad_recepturen()
-        except Exception as e:
-            messagebox.showerror("Fout", f"Opslaan mislukt: {e}")
 
     def verwijder_receptregel():
         sel = rec_tree.selection()

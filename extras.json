@@ -59,10 +59,12 @@
       "Looksaus",
       "Samurai",
       "Cocktail",
-      "Curry",
+      "Currysaus",
+      "Provencaalse",
       "Andalouse",
       "Ketchup",
       "Mayonaise",
+      "Sambal",
       "Bbqsaus"
     ],
     "garnering": {
@@ -101,10 +103,12 @@
       "Looksaus",
       "Samurai",
       "Cocktail",
-      "Curry",
+      "Currysaus",
+      "Provencaalse",
       "Andalouse",
       "Ketchup",
       "Mayonaise",
+      "Sambal",
       "Bbqsaus"
     ],
     "garnering": {
@@ -143,10 +147,12 @@
       "Looksaus",
       "Samurai",
       "Cocktail",
-      "Curry",
+      "Currysaus",
+      "Provencaalse",
       "Andalouse",
       "Ketchup",
       "Mayonaise",
+      "Sambal",
       "Bbqsaus"
     ],
     "garnering": {
@@ -183,10 +189,12 @@
       "Looksaus",
       "Samurai",
       "Cocktail",
-      "Curry",
+      "Currysaus",
+      "Provencaalse",
       "Andalouse",
       "Ketchup",
       "Mayonaise",
+      "Sambal",
       "Bbqsaus"
     ],
     "garnering": {
@@ -217,10 +225,12 @@
       "Looksaus",
       "Samurai",
       "Cocktail",
-      "Curry",
+      "Currysaus",
+      "Provencaalse",
       "Andalouse",
       "Ketchup",
       "Mayonaise",
+      "Sambal",
       "Bbqsaus"
     ],
     "garnering": {
@@ -431,10 +441,12 @@
         "Looksaus",
         "Samurai",
         "Cocktail",
-        "Curry",
+        "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ],
       "sauzen_aantal": 2,
@@ -455,10 +467,12 @@
         "Looksaus",
         "Samurai",
         "Cocktail",
-        "Curry",
+        "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ],
       "sauzen_aantal": 2,
@@ -522,9 +536,11 @@
         "Samurai",
         "Cocktail",
         "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ]
     },
@@ -534,9 +550,11 @@
         "Samurai",
         "Cocktail",
         "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ]
     },
@@ -546,9 +564,11 @@
         "Samurai",
         "Cocktail",
         "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ]
     },
@@ -558,9 +578,11 @@
         "Samurai",
         "Cocktail",
         "Currysaus",
+        "Provencaalse",
         "Andalouse",
         "Ketchup",
         "Mayonaise",
+        "Sambal",
         "Bbqsaus"
       ]
     }

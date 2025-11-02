@@ -30,30 +30,19 @@ def open_menu_management(root):
             return False
 
     def get_next_id(menu_data, category):
-        """Genereert het volgende beschikbare ID voor een categorie"""
         if category not in menu_data or not menu_data[category]:
             return 1
+        existing_ids = [item.get('id') for item in menu_data[category] if 'id' in item]
+        return (max(existing_ids) + 1) if existing_ids else 1
 
-        existing_ids = []
-        for item in menu_data[category]:
-            if 'id' in item:
-                existing_ids.append(item['id'])
-
-        if not existing_ids:
-            return 1
-
-        return max(existing_ids) + 1
-
-    # Main window
-    win = tk.Toplevel(root)
-    win.title("Menu Management")
-    win.geometry("1200x800")
-    win.minsize(1000, 600)
+    # Embed in tab
+    win = root
+    for w in win.winfo_children():
+        w.destroy()
 
     # Menu data laden
     menu_data = load_menu_data()
     if not menu_data:
-        win.destroy()
         return
 
     # Main PanedWindow (verticaal gesplitst)

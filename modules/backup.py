@@ -8,9 +8,12 @@ FILES_TO_BACKUP = ["pizzeria.db", "menu.json", "extras.json"]
 
 
 def open_backup_tool(root):
-    win = tk.Toplevel(root)
-    win.title("Backup & Restore")
-    win.geometry("520x240")
+    # root is nu het tab-frame; gebruik geen Toplevel
+    win = root  # embed in tab
+
+    # hoofdcontainer in tab (vervang vorige Toplevel layout)
+    for w in win.winfo_children():
+        w.destroy()
 
     frame = tk.Frame(win, padx=12, pady=12)
     frame.pack(fill=tk.BOTH, expand=True)

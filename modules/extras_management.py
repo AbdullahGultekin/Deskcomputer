@@ -5,7 +5,19 @@ import os
 
 
 def open_extras_management(root):
-    """Opent het extras management venster"""
+    # EMBED in tab i.p.v. Toplevel
+    win = root
+    for w in win.winfo_children():
+        w.destroy()
+
+    # Hoofdcontainer in de tab
+    container = tk.Frame(win, padx=10, pady=10)
+    container.pack(fill=tk.BOTH, expand=True)
+
+    # Plaats vanaf hier je bestaande layout op 'container' i.p.v. een Toplevel-venster
+    # Voorbeeld skelet (laat jouw bestaande widgets volgen):
+    header = tk.Label(container, text="Extras beheren", font=("Arial", 13, "bold"))
+    header.pack(anchor="w", pady=(0, 8))
 
     def load_extras_data():
         """Laadt de extras data uit extras.json"""
@@ -39,17 +51,19 @@ def open_extras_management(root):
             return []
 
     # Main window
-    win = tk.Toplevel(root)
-    win.title("Extras Management")
-    win.geometry("1400x900")
-    win.minsize(1200, 700)
+    # win = tk.Toplevel(root)
+    # win.title("Extras Management")
+    # win.geometry("1400x900")
+    # win.minsize(1200, 700)
+    # Gebruik de bestaande 'win' (tab-frame); geen apart venster
 
     # Data laden
     extras_data = load_extras_data()
     menu_categories = load_menu_categories()
 
     if not extras_data:
-        win.destroy()
+        # win.destroy()
+        # In embedded modus niets vernietigen; toon alleen niets als de data leeg is.
         return
 
     # Main PanedWindow (3-koloms layout)

@@ -9,14 +9,14 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-import win32print
+#import win32print
 import database
 import tempfile
 import subprocess
 from bon_generator import generate_bon_text
 from modules.koeriers import open_koeriers
 from modules.geschiedenis import open_geschiedenis
-from modules.klanten import open_klanten_zoeken, voeg_klant_toe_indien_nodig
+from modules.klanten import open_klanten_zoeken
 from modules.menu_management import open_menu_management
 from modules.extras_management import open_extras_management
 from modules.klant_management import open_klant_management
@@ -24,6 +24,8 @@ from modules.rapportage import open_rapportage
 from modules.backup import open_backup_tool
 from modules.voorraad import open_voorraad
 from modules.bon_viewer import open_bon_viewer
+from modules.klanten import open_klanten_zoeken
+
 import sys
 import platform
 from database import get_db_connection
@@ -431,9 +433,6 @@ def bestelling_opslaan(show_confirmation=True):
     finally:
         conn.close()
 
-
-# ... existing code ...
-
 def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
     import re
     if not WIN32PRINT_AVAILABLE:
@@ -565,6 +564,25 @@ info@pitapizzanapoli.be
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
                     win32print.WritePrinter(hprinter, b'\n')
 
+                # ==== HIER: Tarief-sectie printen ====
+                tarief_start = -1
+                sep_line = "-" * 42
+                for i in range(details_end_idx, len(bon_lines)):
+                    line = bon_lines[i]
+                    if ("Tarief" in line and "Basis" in line and "BTW" in line and "Totaal" in line):
+                        # neem scheidingslijn erboven mee als die exact '----------...'
+                        tarief_start = i - 1 if i > 0 and bon_lines[i - 1].strip() == sep_line else i
+                        break
+
+                if tarief_start >= 0:
+                    tarief_end = len(bon_lines)
+                    for j in range(tarief_start + 1, len(bon_lines)):
+                        if bon_lines[j].strip() == "" or bon_lines[j].startswith("Totaal"):
+                            tarief_end = j
+                            break
+                    tarief_block = "\n".join(bon_lines[tarief_start:tarief_end]).encode('cp858', errors='replace')
+                    win32print.WritePrinter(hprinter, tarief_block)
+                    win32print.WritePrinter(hprinter, b'\n')
             # Totaal
             ESC = b'\x1B'
             GS = b'\x1D'
@@ -641,9 +659,6 @@ info@pitapizzanapoli.be
             win32print.ClosePrinter(hprinter)
     except Exception as e:
         messagebox.showerror("Fout bij afdrukken", f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}")
-
-
-# ... existing code ...
 
 def find_printer_usb_ids():
     """
@@ -1184,8 +1199,9 @@ def render_opties(product):
             options_on_any_change()
 
         for i, (naam, prijs) in enumerate(items):
-            r, c = divmod(i, 4)
-            label = f"{naam}" if not prijs else f"{naam} (+€{float(prijs):.2f})"
+            r, c = divmod(i, 5)
+            # Toon enkel de naam, geen prijs
+            label = f"{naam}"
             btn = make_toggle_button(g_frame, label, naam in selected_g, width=6)
             btn.configure(command=lambda n=naam, b=btn: toggle_g(n, b))
             btn.grid(row=r, column=c, padx=2, pady=2, sticky="w")
@@ -1523,6 +1539,10 @@ def setup_menu_interface():
     btns = tk.Frame(bestel_frame)
     btns.pack(fill=tk.X)
 
+    # Nieuwe knop: Bestelbon afdrukken (preview/print)
+    tk.Button(btns, text="Print", command=show_print_preview, bg="#D1FFE1").pack(side=tk.LEFT,
+                                                                                               padx=(0, 8))
+
     def _get_selected_indices_from_text():
         try:
             index = overzicht.index("insert")
@@ -1589,63 +1609,6 @@ def setup_menu_interface():
     overzicht.config(cursor="arrow")
     update_overzicht()
 
-def test_bestellingen_vullen():
-    global bestelregels
-    telefoon_entry.delete(0, tk.END)
-    telefoon_entry.insert(0, "037757228")
-
-    adres_entry.delete(0, tk.END)
-    adres_entry.insert(0, "Brugstraat")
-
-    nr_entry.delete(0, tk.END)
-    nr_entry.insert(0, "12")
-
-    postcode_var.set("9120 Vrasene")
-
-    opmerkingen_entry.delete(0, tk.END)
-    opmerkingen_entry.insert(0, "Dit is een testbestelling")
-
-    bestelregels = [
-        {
-            'categorie': 'Large pizza\'s',
-            'product': 'Margherita',
-            'aantal': 2,
-            'prijs': 20.00,
-            'extras': {'garnering': ['Champignons', 'Extra kaas']}
-        },
-        {
-            'categorie': 'schotels',
-            'product': 'Natuur',
-            'aantal': 1,
-            'prijs': 20.00,
-            'extras': {
-                'vlees': 'Pita',
-                'bijgerecht': 'Frieten',
-                'sauzen': ['Looksaus', 'Samurai']
-            }
-        },
-        {
-            'categorie': 'mix schotels',
-            'product': 'Napoli speciaal 2 personen',
-            'aantal': 1,
-            'prijs': 45.00,
-            'extras': {
-                'bijgerecht': ['Frieten', 'Brood'],
-                'sauzen': ['Looksaus', 'Samurai', 'Cocktail', 'Andalouse']
-            }
-        },
-        {
-            'categorie': 'dranken',
-            'product': 'Coca cola',
-            'aantal': 3,
-            'prijs': 2.50
-        }
-    ]
-    update_overzicht()
-    messagebox.showinfo("Test", "Testgegevens zijn ingevuld!")
-
-
-
 
 # GUI opzet START
 root = tk.Tk()
@@ -1653,13 +1616,24 @@ _initialize_app_variables(root)
 root.title("Pizzeria Bestelformulier")
 root.geometry("1400x900")
 root.minsize(1200, 800)
-root.configure(bg="#F3F2F1")  # Hoofdachtergrond
+root.configure(bg="#F3F2F1")
 
-main_frame = tk.Frame(root, padx=10, pady=10, bg="#F3F2F1")
+# Eén hoofd-Notebook
+app_tabs = ttk.Notebook(root)
+app_tabs.pack(fill=tk.BOTH, expand=True)
+
+# ========== TAB: BESTELLEN ==========
+bestellen_tab = tk.Frame(app_tabs, bg="#F3F2F1")
+app_tabs.add(bestellen_tab, text="Bestellen")
+
+# Hoofdcontainer in Bestellen
+main_frame = tk.Frame(bestellen_tab, padx=10, pady=10, bg="#F3F2F1")
 main_frame.pack(fill=tk.BOTH, expand=True)
 
+# Klantgegevens
 klant_frame = tk.LabelFrame(main_frame, text="Klantgegevens", padx=10, pady=10, bg="#E1FFE1", fg="#26734D")
 klant_frame.pack(fill=tk.X, pady=(0, 10))
+
 tel_adres_frame = tk.Frame(klant_frame, bg="#E1FFE1")
 tel_adres_frame.pack(fill=tk.X)
 
@@ -1696,6 +1670,7 @@ nr_entry.grid(row=0, column=8, sticky="w")
 
 postcode_opmerking_frame = tk.Frame(klant_frame, bg="#E1FFE1")
 postcode_opmerking_frame.pack(fill=tk.X, pady=(10, 0))
+
 tk.Label(postcode_opmerking_frame, text="Postcode/Gemeente:", bg="#E1FFE1", fg="#215468").grid(row=0, column=0,
                                                                                                sticky="w", padx=(0, 5))
 postcode_var = tk.StringVar(master=root)
@@ -1703,44 +1678,82 @@ postcode_var.set(postcodes[0])
 postcode_optionmenu = tk.OptionMenu(postcode_opmerking_frame, postcode_var, *postcodes)
 postcode_optionmenu.config(width=20, bg="#E1FFE1")
 postcode_optionmenu.grid(row=0, column=1, sticky="w", padx=(0, 15))
+
 tk.Label(postcode_opmerking_frame, text="Opmerking:", bg="#E1FFE1", fg="#215468").grid(row=0, column=2, sticky="w",
                                                                                        padx=(0, 5))
 opmerkingen_entry = tk.Entry(postcode_opmerking_frame, width=30, bg="#FFFDE1")
 opmerkingen_entry.grid(row=0, column=3, sticky="we")
 postcode_opmerking_frame.grid_columnconfigure(3, weight=1)
 
+# Menu/producten UI
 setup_menu_interface()
 
-knoppen_frame = tk.Frame(root, bg="#ECF5FF")
-knoppen_frame.pack(fill=tk.X, pady=10)
+# ========== TABS VOOR OVERIGE MODULES (LAZY LOAD) ==========
+tabs_map = {}
 
-tk.Button(knoppen_frame, text="Menu beheren", command=lambda: open_menu_management(root),
-          bg="#D6EAF8", fg="#174F20", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Extras beheren", command=lambda: open_extras_management(root),
-          bg="#FCF3CF", fg="#B7950B", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Klanten beheren", command=lambda: open_klant_management(root),
-          bg="#D5F5E3", fg="#0E6655", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Geschiedenis", command=lambda: open_geschiedenis(root, menu_data, EXTRAS, app_settings),
-          bg="#F9E79F", fg="#B7950B", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Rapportage", command=lambda: open_rapportage(root),
-          bg="#E1E1FF", fg="#413E94", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Backup/Restore", command=lambda: open_backup_tool(root),
-          bg="#FADBD8", fg="#7C1230", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Printer Instellingen", command=open_printer_settings,
-          bg="#D6DBDF", fg="#626567", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(0, 10))
-tk.Button(knoppen_frame, text="Koeriers", command=lambda: open_koeriers(root),
-          bg="#D5F5E3", fg="#0E6655", font=("Arial", 11), padx=10, pady=5).pack(side=tk.LEFT, padx=(10, 0))
-tk.Button(knoppen_frame, text="Bon Afdrukken/Opslaan", command=show_print_preview,
-          bg="#ABEBC6", fg="#225722", font=("Arial", 11), padx=10, pady=5).pack(side=tk.RIGHT)
-tk.Button(knoppen_frame, text="TEST", command=test_bestellingen_vullen, bg="#FFD700", fg="#867B17",
-          font=("Arial", 10), padx=5, pady=2).pack(side=tk.RIGHT, padx=(0, 10))
 
+def add_tab(title):
+    frame = tk.Frame(app_tabs)
+    app_tabs.add(frame, text=title)
+    tabs_map[title] = {"frame": frame, "loaded": False}
+    return frame
+
+
+# Gewenste volgorde: Koeriers direct na Bestellen, daarna Menu Management, dan overige
+koeriers_frame_tab = add_tab("Koeriers")
+menu_mgmt_frame_tab = add_tab("Menu Management")
+extras_frame = add_tab("Extras")
+klanten_frame_tab = add_tab("Klanten")
+geschiedenis_frame_tab = add_tab("Geschiedenis")
+rapportage_frame_tab = add_tab("Rapportage")
+backup_frame_tab = add_tab("Backup/Restore")
+voorraad_frame_tab = add_tab("Voorraad")
+
+
+def load_tab_content(title):
+    info = tabs_map.get(title)
+    if not info or info["loaded"]:
+        return
+    parent = info["frame"]
+    try:
+        if title == "Extras":
+            open_extras_management(parent)
+        elif title == "Klanten":
+            open_klant_management(parent)
+        elif title == "Geschiedenis":
+            open_geschiedenis(parent, menu_data, EXTRAS, app_settings)
+        elif title == "Rapportage":
+            open_rapportage(parent)
+        elif title == "Backup/Restore":
+            open_backup_tool(parent)
+        elif title == "Koeriers":
+            open_koeriers(parent)
+        elif title == "Voorraad":
+            open_voorraad(parent)
+        elif title == "Menu Management":
+            open_menu_management(parent)
+        info["loaded"] = True
+    except Exception:
+        info["loaded"] = True
+
+
+def on_tab_changed(event):
+    current = event.widget.select()
+    idx = event.widget.index(current)
+    title = event.widget.tab(idx, "text")
+    load_tab_content(title)
+
+
+app_tabs.bind("<<NotebookTabChanged>>", on_tab_changed)
+
+# Sneltoetsen
 root.bind("<Control-p>", show_print_preview)
 root.bind("<Command-p>", show_print_preview)
 
+# Startcategorie
 categories = load_menu_categories()
 if categories:
     root.after(100, lambda: on_select_categorie(categories[0]))
 
-
 root.mainloop()
+

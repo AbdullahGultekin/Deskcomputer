@@ -8,13 +8,12 @@ import database
 def open_klant_management(root):
     """Opent het uitgebreide klant management venster"""
 
-    # Main window
-    win = tk.Toplevel(root)
-    win.title("Klant Management")
-    win.geometry("1400x900")
-    win.minsize(1200, 700)
+    # EMBED in tab i.p.v. Toplevel
+    win = root
+    for w in win.winfo_children():
+        w.destroy()
 
-    # Main PanedWindow (3-koloms layout)
+    # Main PanedWindow (3-koloms layout) direct in de tab
     main_paned = tk.PanedWindow(win, orient=tk.HORIZONTAL, sashrelief=tk.RAISED, sashpad=4)
     main_paned.pack(fill=tk.BOTH, expand=True)
 

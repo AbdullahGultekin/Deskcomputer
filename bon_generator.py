@@ -94,7 +94,15 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     if klant_naam:
         address_lines.extend(wrap_text(klant_naam))
 
+    # Toon algemene opmerking (indien ingevuld)
+    klant_opm = (klant.get("opmerking") or "").strip()
+    if klant_opm:
+        address_lines.append("")  # kleine scheiding
+        address_lines.extend(wrap_text(f"Opmerking: {klant_opm}"))
+
     address_lines.append("")  # scheiding naar details
+
+
 
     address_str = "\n".join(address_lines)
     address_for_qr = f"{klant['adres']} {klant['nr']}, {klant['postcode_gemeente']}, Belgium"
@@ -159,7 +167,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         if "durum" in cat: prefix = "Durum"
         if "pasta" in cat: prefix = "Pasta"
         if "schotel" in cat and "mix schotel" not in cat: prefix = "Schotel"
-        if "kapsalon" in cat: prefix = "Kapsalon"
         if "vegetarisch broodjes" in cat: prefix = "Broodje"
 
         is_mixschotel = "mix schotel" in cat or "mix-schotel" in cat or "mixschotel" in cat

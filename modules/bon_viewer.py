@@ -35,7 +35,7 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
         klant_data, bestelregels, bonnummer, menu_data_for_drinks=menu_data_global, extras_data=extras_data_global
     )
     # total_header en total_row zijn nu leeg in bon_generator.py, de inhoud zit in details_str
-    header_str, info_str, address_str, details_str, _, _, te_betalen_str, totaal_bedrag_str, footer_str, address_for_qr, bon_width_from_generator = parts
+    header_str, info_str, address_str, details_str, tarief_str, totaal_label, totaal_waarde, te_betalen_str, footer_str, address_for_qr, bon_width_from_generator = parts
 
     # Construct the full text for printing, carefully managing newlines.
     # Each 'part_str' from generate_bon_text already contains its internal newlines
@@ -46,7 +46,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
             info_str.strip() + "\n" +  # Info block, then a single newline
             address_str + "\n" +  # Address block, then a single newline
             details_str.strip() + "\n" +  # Details block (already includes the BTW table and ends nicely), then one newline
-            totaal_bedrag_str + "\n" +  # Totaal bedrag line
+            tarief_str.strip() + "\n" +  # <-- BTW/ Tarief tabel meenemen in preview/print
+            f"{totaal_label}: {totaal_waarde}\n" +  # Totaal regel correct opgebouwd
+            f"{te_betalen_str}\n" +  # "TE BETALEN!"
             footer_str  # Footer block (contains internal blank lines)
     )
 

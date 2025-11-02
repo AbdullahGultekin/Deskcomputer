@@ -1719,6 +1719,12 @@
       "desc": "33cl"
     },
     {
+      "id": 1606,
+      "naam": "Jupiler",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
       "id": 1610,
       "naam": "Fles Coca cola",
       "prijs": 5.0,
@@ -1782,7 +1788,7 @@
     },
     {
       "id": 1707,
-      "naam": "Zalm salade groot",
+      "naam": "Zalm salade",
       "prijs": 10.0,
       "desc": ""
     }

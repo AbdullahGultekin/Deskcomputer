@@ -7,10 +7,11 @@ from collections import defaultdict
 
 
 def open_rapportage(root):
-    win = tk.Toplevel(root)
-    win.title("Rapportage & Analytics")
-    win.geometry("1100x750")
-    win.minsize(1000, 650)
+    # root is tab-frame
+    win = root
+
+    for w in win.winfo_children():
+        w.destroy()
 
     paned = tk.PanedWindow(win, orient=tk.HORIZONTAL, sashrelief=tk.RAISED, sashpad=4)
     paned.pack(fill=tk.BOTH, expand=True)
@@ -43,7 +44,7 @@ def open_rapportage(root):
         if periode_var.get() == "vandaag":
             d1 = d2 = today
         elif periode_var.get() == "week":
-            d1 = today - datetime.timedelta(days=today.weekday())  # maandag
+            d1 = today - datetime.timedelta(days=today.weekday())
             d2 = today
         elif periode_var.get() == "maand":
             d1 = today.replace(day=1)
@@ -86,8 +87,6 @@ def open_rapportage(root):
         except Exception as e:
             messagebox.showerror("Export", f"Mislukt: {e}")
 
-
-    # placeholders die later door loaders gevuld worden
     export_data = {
         "omzet": ([], []),
         "populair": ([], []),
@@ -113,7 +112,6 @@ def open_rapportage(root):
     omzet_tab = ttk.Frame(tabs)
     tabs.add(omzet_tab, text="Omzet")
 
-    # dag/ week/ maand breakdown
     omzet_tree = ttk.Treeview(omzet_tab, columns=("periode", "orders", "omzet", "gemiddeld"), show="headings",
                               height=10)
     for col, text, w, anchor in [
@@ -126,7 +124,6 @@ def open_rapportage(root):
         omzet_tree.column(col, width=w, anchor=anchor)
     omzet_tree.pack(fill=tk.BOTH, expand=True)
 
-    # Samenvatting onderaan
     omzet_summary = tk.Label(omzet_tab, text="", font=("Arial", 11, "bold"))
     omzet_summary.pack(anchor="w", pady=(6, 0))
 
@@ -160,12 +157,10 @@ def open_rapportage(root):
         koerier_tree.column(col, width=w, anchor=anchor)
     koerier_tree.pack(fill=tk.BOTH, expand=True)
 
-    # ------- Loaders --------
     def load_omzet(d1: datetime.date, d2: datetime.date):
         omzet_tree.delete(*omzet_tree.get_children())
         conn = database.get_db_connection()
         cur = conn.cursor()
-        # totale range
         cur.execute("""
                     SELECT datum, COUNT(*) AS orders, COALESCE(SUM(totaal), 0) AS omzet
                     FROM bestellingen
@@ -186,8 +181,6 @@ def open_rapportage(root):
             periode_str = datetime.datetime.strptime(r["datum"], "%Y-%m-%d").strftime("%d/%m/%Y")
             omzet_tree.insert("", tk.END, values=(periode_str, orders, f"{omzet:.2f}", f"{gem:.2f}"))
 
-        # samenvatting rijen (week / maand totale)
-        # week
         cur.execute("""
                     SELECT strftime('%Y-%W', datum) AS week, COUNT(*) AS orders, COALESCE(SUM(totaal), 0) AS omzet
                     FROM bestellingen
@@ -196,7 +189,6 @@ def open_rapportage(root):
                     ORDER BY week
                     """, (d1.strftime("%Y-%m-%d"), d2.strftime("%Y-%m-%d")))
         week_rows = cur.fetchall()
-        # maand
         cur.execute("""
                     SELECT strftime('%Y-%m', datum) AS maand, COUNT(*) AS orders, COALESCE(SUM(totaal), 0) AS omzet
                     FROM bestellingen
@@ -222,12 +214,9 @@ def open_rapportage(root):
 
         omzet_summary.config(
             text=f"Totaal orders: {total_orders}   |   Totale omzet: €{total_omzet:.2f}   |   Gemiddeld per order: €{(total_omzet / total_orders if total_orders else 0):.2f}")
-        export_data["omzet"] = (
-            [(omzet_tree.set(i, "periode"), omzet_tree.set(i, "orders"), omzet_tree.set(i, "omzet"),
-              omzet_tree.set(i, "gemiddeld"))
-             for i in omzet_tree.get_children("")],
-            ["Periode", "Aantal orders", "Omzet (€)", "Gem. per order (€)"]
-        )
+        export_data["omzet"] = ([(omzet_tree.set(i, "periode"), omzet_tree.set(i, "orders"), omzet_tree.set(i, "omzet"),
+                                  omzet_tree.set(i, "gemiddeld")) for i in omzet_tree.get_children("")],
+                                ["Periode", "Aantal orders", "Omzet (€)", "Gem. per order (€)"])
 
     def load_populair(d1: datetime.date, d2: datetime.date):
         pop_tree.delete(*pop_tree.get_children())
@@ -281,6 +270,6 @@ def open_rapportage(root):
 
         export_data["koeriers"] = (data, ["Koerier", "Aantal orders", "Omzet (€)", "Gem. per order (€)"])
 
-    # Init met vandaag
+    # Init: vandaag
     periode_var.set("vandaag")
     refresh_all()
