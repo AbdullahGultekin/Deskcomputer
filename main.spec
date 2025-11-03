@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('menu.json', '.'), ('extras.json', '.'), ('settings.json', '.'), ('modules', 'modules')],
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,10 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-app = BUNDLE(
-    exe,
-    name='main.app',
-    icon=None,
-    bundle_identifier=None,
+    icon=['logo.ico'],
 )
