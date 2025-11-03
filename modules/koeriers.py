@@ -26,19 +26,19 @@ def open_koeriers(root):
 
     # ===================== LINKERZIJDE: BESTELLINGEN =====================
     left = tk.Frame(paned, padx=10, pady=10)
-    paned.add(left, minsize=680)
+    paned.add(left, minsize=480)
 
     # Filterbalk
     filter_frame = tk.Frame(left)
     filter_frame.pack(fill=tk.X, pady=(0, 6))
     tk.Label(filter_frame, text="Zoek:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
     search_var = tk.StringVar()
-    search_entry = tk.Entry(filter_frame, textvariable=search_var, width=24)
+    search_entry = tk.Entry(filter_frame, textvariable=search_var, width=12)
     search_entry.pack(side=tk.LEFT, padx=(6, 12))
     tk.Label(filter_frame, text="Koerier:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
     filter_koerier_var = tk.StringVar(value="Alle")
     koerier_opt = ttk.Combobox(filter_frame, state="readonly",
-                               values=["Alle"] + koeriers, textvariable=filter_koerier_var, width=18)
+                               values=["Alle"] + koeriers, textvariable=filter_koerier_var, width=12)
     koerier_opt.pack(side=tk.LEFT, padx=(6, 12))
     tk.Label(filter_frame, text="Datum:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
     datum_var = tk.StringVar(value=datetime.date.today().strftime('%Y-%m-%d'))
@@ -98,7 +98,7 @@ def open_koeriers(root):
 
     # ===================== RECHTERZIJDE: KOERIERS + AFREKENING =====================
     right = tk.Frame(paned, padx=10, pady=10)
-    paned.add(right, minsize=420)
+    paned.add(right, minsize=700)
 
     tk.Label(right, text="Koeriers", font=("Arial", 13, "bold")).pack(anchor="w")
 
@@ -203,12 +203,12 @@ def open_koeriers(root):
             del_combo['values'] = koeriers
             if koeriers:
                 del_combo.set(koeriers[0])
-            totals_var[naam] = tk.DoubleVar(value=0.0)
-            eind_totals_var[naam] = tk.DoubleVar(value=0.0)
-            extra_km_var[naam] = tk.DoubleVar(value=0.0)
-            extra_uur_var[naam] = tk.DoubleVar(value=0.0)
-            extra_bedrag_var[naam] = tk.DoubleVar(value=0.0)
-            afrekening_var[naam] = tk.DoubleVar(value=0.0)
+            totals_var[naam] = tk.DoubleVar(value=0)
+            eind_totals_var[naam] = tk.DoubleVar(value=0)
+            extra_km_var[naam] = tk.DoubleVar(value=0)
+            extra_uur_var[naam] = tk.DoubleVar(value=0)
+            extra_bedrag_var[naam] = tk.DoubleVar(value=0)
+            afrekening_var[naam] = tk.DoubleVar(value=0)
             laad_bestellingen(True)
         except sqlite3.IntegrityError:
             messagebox.showwarning("Fout", f"Koerier '{naam}' bestaat al.")
@@ -261,7 +261,7 @@ def open_koeriers(root):
     tk.Button(manage_frame, text="Toevoegen", command=lambda: voeg_koerier_toe(), bg="#D1FFD1").pack(side=tk.LEFT,
                                                                                                      padx=6)
     del_name_var = tk.StringVar(value=koeriers[0] if koeriers else "")
-    del_combo = ttk.Combobox(manage_frame, values=koeriers, textvariable=del_name_var, width=18, state="readonly")
+    del_combo = ttk.Combobox(manage_frame, values=koeriers, textvariable=del_name_var, width=12, state="readonly")
     del_combo.pack(side=tk.LEFT, padx=6)
     tk.Button(manage_frame, text="Verwijderen", command=lambda: verwijder_koerier(del_name_var.get()),
               bg="#FFD1D1").pack(side=tk.LEFT)
@@ -278,13 +278,13 @@ def open_koeriers(root):
         tk.Label(totals_frame, text=header_text, font=("Arial", 10, "bold"), anchor="w", bg="#D2F2FF"
                  ).grid(row=0, column=col, sticky="we", padx=5, pady=2)
 
-    eind_totals_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
-    extra_km_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
-    extra_uur_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
-    extra_bedrag_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
-    afrekening_var = {k: tk.DoubleVar(value=0.0) for k in koeriers}
-    subtotaal_totaal_var = tk.DoubleVar(value=0.0)
-    totaal_betaald_var = tk.DoubleVar(value=0.0)
+    eind_totals_var = {k: tk.DoubleVar(value= 0) for k in koeriers}
+    extra_km_var = {k: tk.DoubleVar(value=0) for k in koeriers}
+    extra_uur_var = {k: tk.DoubleVar(value=0) for k in koeriers}
+    extra_bedrag_var = {k: tk.DoubleVar(value=0) for k in koeriers}
+    afrekening_var = {k: tk.DoubleVar(value=0) for k in koeriers}
+    subtotaal_totaal_var = tk.DoubleVar(value=0)
+    totaal_betaald_var = tk.DoubleVar(value=0)
 
     # Rij-achtergrond per koerier in zelfde kleurfamilie
     for i, naam in enumerate(koeriers, start=1):

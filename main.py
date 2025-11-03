@@ -9,7 +9,7 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-import win32print
+#import win32print
 import database
 import tempfile
 import subprocess
@@ -140,6 +140,12 @@ def update_straatnamen_json(nieuwe_straat, json_path="straatnamen.json"):
         data.append(nieuwe_straat)
         with open(json_path, "w", encoding="utf-8") as f2:
             json.dump(data, f2, ensure_ascii=False, indent=2)
+
+def get_pizza_num(naam):
+    """Haalt het nummer voor de punt uit een pizzanaam."""
+    if '.' in naam:
+        return naam.split('.')[0].strip()
+    return naam.strip()
 
 
 EXTRAS = {}
@@ -433,7 +439,7 @@ def bestelling_opslaan(show_confirmation=True):
     finally:
         conn.close()
 
-def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None):
+def _save_and_print_from_preview(full_bon_text_for_print, address_for_qr=None, klant_data=None):
     import re
     if not WIN32PRINT_AVAILABLE:
         messagebox.showerror("Platform Error", "Windows printer support niet beschikbaar.")
@@ -546,6 +552,10 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                 win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
 
+                # Stijl voor besteldetails aanzetten (vet en dubbele hoogte)
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte aan
+
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
                     stripped_line = line.strip()
@@ -563,6 +573,10 @@ info@pitapizzanapoli.be
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
                     win32print.WritePrinter(hprinter, b'\n')
+
+                # Reset de stijl na de besteldetails
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
                 # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
@@ -597,12 +611,27 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')
                 win32print.WritePrinter(hprinter, totaal_line.encode('cp858', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
+
+            # HIER: Algemene opmerking printen (indien aanwezig) met de lokaal opgehaalde data
+            if klant_data:
+                klant_opm = (klant_data.get("opmerking") or "").strip()
+                if klant_opm:
+                    win32print.WritePrinter(hprinter, b'\n')
+                    win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Centreren
+                    win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Vet aan
+                    win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte aan
+                    opmerking_text = f"Opmerking:\n{klant_opm}"
+                    win32print.WritePrinter(hprinter, opmerking_text.encode('cp858', errors='replace'))
+                    win32print.WritePrinter(hprinter, b'\n')
+                    win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Reset grootte
+                    win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Vet uit
+                    win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links uitlijnen
 
             # Footer (geen dubbele "Eet smakelijk!" hier)
             footer = """
@@ -693,25 +722,6 @@ def find_printer_usb_ids():
         messagebox.showerror("Fout", "PyUSB niet geïnstalleerd. Installeer met: pip install pyusb")
 
 
-# NIEUW: Functie om het afdrukvoorbeeld te tonen (triggered door Ctrl+P)
-def show_print_preview(event=None):
-    klant_data, order_items, temp_bonnummer = _get_current_order_data()
-    if klant_data is None:  # Geen geldige data om te previewen
-        return
-
-    # Toon het afdrukvoorbeeld
-    open_bon_viewer(
-        root,
-        klant_data,
-        order_items,
-        temp_bonnummer,
-        menu_data,
-        EXTRAS,
-        app_settings,
-        _save_and_print_from_preview  # Geef de callback mee
-    )
-
-
 def update_overzicht():
     global overzicht, bestelregels
     overzicht.delete(1.0, tk.END)
@@ -737,8 +747,6 @@ def update_overzicht():
         grouped[key]['aantal'] += int(item.get('aantal', 0))
 
     # 2) Nettere weergave met uitlijning
-    #    Format: [n] Categorie - Product xAANT €TOT
-    #    Daarna bullets voor extras en opmerking
     totaal = 0.0
     line_no = 1
     name_col_width = 38  # kolombreedte voor naamsegment voordat de prijs komt
@@ -749,7 +757,56 @@ def update_overzicht():
         totaal_regel = item['prijs'] * aantal
         totaal += totaal_regel
 
-        header_left = f"[{line_no}] {item['categorie']} - {item['product']} x{aantal}"
+        # --- Logica voor weergavenaam (display_name), vergelijkbaar met bon_generator ---
+        product_naam = item['product']
+        cat = (item['categorie'] or '').lower()
+        prefix = ""
+        display_name = ""
+
+        # Bepaal prefix op basis van categorie
+        if "small" in cat:
+            prefix = "Small"
+        elif "medium" in cat:
+            prefix = "Medium"
+        elif "large" in cat:
+            prefix = "Large"
+        elif "grote-broodjes" in cat:
+            prefix = "Groot"
+        elif "klein-broodjes" in cat:
+            prefix = "Klein"
+        elif "turks-brood" in cat:
+            prefix = "Turks"
+        elif "durum" in cat:
+            prefix = "Durum"
+        elif "pasta" in cat:
+            prefix = "Pasta"
+        elif "schotel" in cat and "mix" not in cat:
+            prefix = "Schotel"
+        elif "vegetarisch broodjes" in cat:
+            prefix = "Broodje"
+
+        extras = item.get('extras', {})
+        half_half = extras.get('half_half')
+        is_mixschotel = "mix schotel" in cat
+
+        # Logica voor pizza's
+        if any(x in cat for x in ("pizza's", "pizza")):
+            formaat = prefix if prefix else "Pizza"
+            if half_half and isinstance(half_half, list) and len(half_half) == 2:
+                display_name = f"{formaat} {half_half[0]}/{half_half[1]}"
+            else:
+                nummer = get_pizza_num(product_naam)
+                display_name = f"{formaat} {nummer}"
+        # Logica voor andere items
+        else:
+            if is_mixschotel:
+                display_name = product_naam.strip()
+            elif prefix:  # Gebruik prefix als die is ingesteld
+                display_name = f"{prefix} {product_naam}".strip()
+            else:  # Fallback voor dranken, desserts etc.
+                display_name = product_naam.strip()
+
+        header_left = f"[{line_no}] {display_name} x{aantal}"
         header_right = f"€{totaal_regel:.2f}"
         # afkappen indien te lang, laat ruimte voor prijs
         if len(header_left) > name_col_width:
@@ -761,9 +818,7 @@ def update_overzicht():
         # Extras onder bullets
         extras = item.get('extras', {}) or {}
         if extras:
-            # half_half speciaal formatteren
-            if isinstance(extras.get('half_half'), list) and len(extras['half_half']) == 2:
-                overzicht.insert(tk.END, f"  • Half-half: pizza {extras['half_half'][0]} & {extras['half_half'][1]}\n")
+            # half_half is al verwerkt in de hoofdnaam en wordt hier dus overgeslagen.
             # saus/sauzen/garnering/bijgerecht normaliseren
             for k in ['vlees', 'bijgerecht', 'saus', 'sauzen', 'garnering']:
                 if k in extras and extras[k]:
@@ -1390,7 +1445,7 @@ def setup_menu_interface():
 
     # ========== LINKERKANT ==========
     menu_selection_frame = tk.Frame(menu_main_panel)
-    menu_main_panel.add(menu_selection_frame, minsize=800)
+    menu_main_panel.add(menu_selection_frame, minsize=950)
 
     preferred_order = app_settings.get("category_order", [])
 
@@ -1539,9 +1594,7 @@ def setup_menu_interface():
     btns = tk.Frame(bestel_frame)
     btns.pack(fill=tk.X)
 
-    # Nieuwe knop: Bestelbon afdrukken (preview/print)
-    tk.Button(btns, text="Print", command=show_print_preview, bg="#D1FFE1").pack(side=tk.LEFT,
-                                                                                               padx=(0, 8))
+                                                                               
 
     def _get_selected_indices_from_text():
         try:
@@ -1746,9 +1799,7 @@ def on_tab_changed(event):
 
 app_tabs.bind("<<NotebookTabChanged>>", on_tab_changed)
 
-# Sneltoetsen
-root.bind("<Control-p>", show_print_preview)
-root.bind("<Command-p>", show_print_preview)
+
 
 # Startcategorie
 categories = load_menu_categories()

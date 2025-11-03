@@ -94,11 +94,6 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     if klant_naam:
         address_lines.extend(wrap_text(klant_naam))
 
-    # Toon algemene opmerking (indien ingevuld)
-    klant_opm = (klant.get("opmerking") or "").strip()
-    if klant_opm:
-        address_lines.append("")  # kleine scheiding
-        address_lines.extend(wrap_text(f"Opmerking: {klant_opm}"))
 
     address_lines.append("")  # scheiding naar details
 

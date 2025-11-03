@@ -105,7 +105,7 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
 
     def print_bon_action():
         # De extra bevestiging is verwijderd. De actie wordt direct uitgevoerd.
-        save_and_print_callback(full_bon_text_for_print, address_for_qr)
+        save_and_print_callback(full_bon_text_for_print, address_for_qr, klant_data)
         bon_win.destroy()
 
     # Knoppen voor Printen en Sluiten
