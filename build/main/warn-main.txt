@@ -14,15 +14,34 @@ Types if import:
 IMPORTANT: Do NOT post this list to the issue-tracker. Use it as a basis for
             tracking down the missing module yourself. Thanks!
 
+<<<<<<< HEAD
 missing module named grp - imported by shutil (delayed, optional), tarfile (optional), pathlib (delayed, optional), subprocess (delayed, conditional, optional)
 missing module named pwd - imported by posixpath (delayed, conditional, optional), shutil (delayed, optional), tarfile (optional), pathlib (delayed, optional), subprocess (delayed, conditional, optional), netrc (delayed, conditional), getpass (delayed)
 missing module named _frozen_importlib_external - imported by importlib._bootstrap (delayed), importlib (optional), importlib.abc (optional)
 excluded module named _frozen_importlib - imported by importlib (optional), importlib.abc (optional)
 missing module named posix - imported by os (conditional, optional), posixpath (optional), shutil (conditional), importlib._bootstrap_external (conditional)
 missing module named resource - imported by posix (top-level)
+=======
+missing module named _winapi - imported by encodings (delayed, conditional, optional), shutil (conditional), subprocess (conditional), ntpath (optional), mimetypes (optional)
+missing module named winreg - imported by importlib._bootstrap_external (conditional), platform (delayed, optional), mimetypes (optional), urllib.request (delayed, conditional, optional)
+missing module named nt - imported by shutil (conditional), importlib._bootstrap_external (conditional), _colorize (delayed, conditional, optional), os (delayed, conditional, optional), ntpath (optional), ctypes (delayed, conditional)
+missing module named _frozen_importlib_external - imported by importlib._bootstrap (delayed), importlib (optional), importlib.abc (optional)
+excluded module named _frozen_importlib - imported by importlib (optional), importlib.abc (optional)
+missing module named 'collections.abc' - imported by traceback (top-level), typing (top-level), inspect (top-level), logging (top-level), importlib.resources.readers (top-level), selectors (top-level), tracemalloc (top-level), PIL.Image (top-level), PIL._typing (top-level), xml.etree.ElementTree (top-level), PIL.TiffImagePlugin (top-level), PIL.ImageOps (top-level), PIL.ImagePalette (top-level), PIL.GimpGradientFile (conditional), PIL.ImageFilter (top-level), PIL.ImageQt (conditional), PIL.ImageMath (conditional), PIL.ImageSequence (conditional), PIL.PngImagePlugin (conditional), PIL.ImageDraw (top-level), PIL._imagingft (top-level), sqlite3.dbapi2 (top-level), PIL.Jpeg2KImagePlugin (conditional), http.client (top-level)
+missing module named 'usb.backend.libusb01' - imported by /Users/abdullahgultekin/PycharmProjects/Deskcomputer/.venv/lib/python3.13/site-packages/_pyinstaller_hooks_contrib/rthooks/pyi_rth_usb.py (optional)
+missing module named 'usb.backend.libusb10' - imported by /Users/abdullahgultekin/PycharmProjects/Deskcomputer/.venv/lib/python3.13/site-packages/_pyinstaller_hooks_contrib/rthooks/pyi_rth_usb.py (optional)
+missing module named vms_lib - imported by platform (delayed, optional)
+missing module named 'java.lang' - imported by platform (delayed, optional)
+missing module named java - imported by platform (delayed)
+missing module named msvcrt - imported by subprocess (optional), getpass (optional)
+missing module named _wmi - imported by platform (optional)
+>>>>>>> 4f113cffd0d744ed423a99ea87fa79520dab8f80
 missing module named numpy - imported by PIL._typing (conditional, optional)
+missing module named openpyxl - imported by modules.rapportage (delayed, optional)
+missing module named win32print - imported by /Users/abdullahgultekin/PycharmProjects/Deskcomputer/main.py (top-level)
 missing module named png - imported by qrcode.compat.png (optional)
 missing module named olefile - imported by PIL.FpxImagePlugin (top-level), PIL.MicImagePlugin (top-level)
+<<<<<<< HEAD
 missing module named _scproxy - imported by urllib.request (conditional)
 missing module named termios - imported by getpass (optional)
 missing module named defusedxml - imported by PIL.Image (optional)
@@ -30,3 +49,6 @@ missing module named openpyxl - imported by modules.rapportage (delayed, optiona
 missing module named readline - imported by code (delayed, conditional, optional)
 missing module named _posixsubprocess - imported by subprocess (conditional)
 missing module named fcntl - imported by subprocess (optional)
+=======
+missing module named defusedxml - imported by PIL.Image (optional)
+>>>>>>> 4f113cffd0d744ed423a99ea87fa79520dab8f80

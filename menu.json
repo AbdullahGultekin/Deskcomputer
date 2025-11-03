@@ -1449,6 +1449,12 @@
       "desc": ""
     },
     {
+      "id": 1009,
+      "naam": "Sambal",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
       "id": 1010,
       "naam": "Coctailsaus",
       "prijs": 1.5,
@@ -1713,26 +1719,32 @@
       "desc": "33cl"
     },
     {
+      "id": 1606,
+      "naam": "Jupiler",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
       "id": 1610,
-      "naam": "Coca cola",
+      "naam": "Fles Coca cola",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1611,
-      "naam": "Cola zero",
+      "naam": "Fles Cola zero",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1612,
-      "naam": "Fanta",
+      "naam": "Fles Fanta",
       "prijs": 5.0,
       "desc": "1,5l"
     },
     {
       "id": 1613,
-      "naam": "Ice tea",
+      "naam": "Fles Ice tea",
       "prijs": 5.0,
       "desc": "1,5l"
     }
@@ -1776,7 +1788,7 @@
     },
     {
       "id": 1707,
-      "naam": "Zalm salade groot",
+      "naam": "Zalm salade",
       "prijs": 10.0,
       "desc": ""
     }

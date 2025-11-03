@@ -1,26 +1,27 @@
 import tkinter as tk
 from tkinter import ttk
-import database  # Gebruik de nieuwe database module
+import database
 
 
-def open_klanten_zoeken(root, tel_entry, adres_entry, nr_entry, postcode_var, postcodes_lijst):
-    """Opent een venster om een klant te zoeken op telefoonnummer en de velden in te vullen."""
-    win = tk.Toplevel(root)
-    win.title("Zoek Klant")
-    win.geometry("650x400")
+def open_klanten_zoeken(root, tel_entry, naam_entry, adres_entry, nr_entry, postcode_var, postcodes_lijst):
+    """Open klant-zoekvenster in een apart Toplevel (hoofdschema blijft intact)."""
+    top = tk.Toplevel(root)
+    top.title("Klant zoeken")
+    top.transient(root)
+    top.grab_set()
 
-    tk.Label(win, text="Zoek op Telefoonnummer:", font=("Arial", 11)).pack(pady=(10, 2), padx=10, anchor="w")
+    tk.Label(top, text="Zoek op Telefoonnummer:", font=("Arial", 11)).pack(pady=(10, 2), padx=10, anchor="w")
 
     zoek_var = tk.StringVar()
-    zoek_entry = tk.Entry(win, textvariable=zoek_var, font=("Arial", 11))
+    zoek_entry = tk.Entry(top, textvariable=zoek_var, font=("Arial", 11))
     zoek_entry.pack(fill=tk.X, padx=10)
     zoek_entry.focus()
 
-    result_frame = tk.Frame(win)
+    result_frame = tk.Frame(top)
     result_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     cols = ('telefoon', 'naam', 'adres')
-    tree = ttk.Treeview(result_frame, columns=cols, show='headings')
+    tree = ttk.Treeview(result_frame, columns=cols, show='headings', height=12)
     tree.heading('telefoon', text='Telefoonnummer')
     tree.heading('naam', text='Naam')
     tree.heading('adres', text='Adres')
@@ -33,84 +34,51 @@ def open_klanten_zoeken(root, tel_entry, adres_entry, nr_entry, postcode_var, po
     tree.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-    def update_zoekresultaten(*args):
-        zoekterm = zoek_var.get().strip()
+    def update_zoekresultaten(*_):
+        term = zoek_var.get().strip()
         tree.delete(*tree.get_children())
-
-        if not zoekterm:
+        if not term:
             return
-
         conn = database.get_db_connection()
-        # Gebruik LIKE voor een flexibele zoekopdracht
-        cursor = conn.execute("SELECT id, telefoon, naam, straat, huisnummer FROM klanten WHERE telefoon LIKE ?",
-                              (f"%{zoekterm}%",))
-
-        for klant in cursor.fetchall():
-            adres = f"{klant['straat']} {klant['huisnummer']}"
-            tree.insert("", "end", values=(klant['telefoon'], klant['naam'], adres), iid=klant['id'])
-
+        cur = conn.execute(
+            "SELECT id, telefoon, naam, straat, huisnummer FROM klanten WHERE telefoon LIKE ?",
+            (f"%{term}%",)
+        )
+        for r in cur.fetchall():
+            adres = f"{r['straat'] or ''} {r['huisnummer'] or ''}".strip()
+            tree.insert("", "end", iid=str(r['id']), values=(r['telefoon'], r['naam'] or "", adres))
         conn.close()
 
     def selecteer_klant_en_sluit():
-        selected_item = tree.selection()
-        if not selected_item:
+        sel = tree.selection()
+        if not sel:
             return
-
-        klant_id = selected_item[0]
+        klant_id = int(sel[0])
         conn = database.get_db_connection()
-        geselecteerde_klant = conn.execute("SELECT * FROM klanten WHERE id = ?", (klant_id,)).fetchone()
+        k = conn.execute("SELECT * FROM klanten WHERE id = ?", (klant_id,)).fetchone()
         conn.close()
-
-        if geselecteerde_klant:
-            tel_entry.delete(0, tk.END)
-            tel_entry.insert(0, geselecteerde_klant['telefoon'])
-
-            adres_entry.delete(0, tk.END)
-            adres_entry.insert(0, geselecteerde_klant['straat'])
-
-            nr_entry.delete(0, tk.END)
-            nr_entry.insert(0, geselecteerde_klant['huisnummer'])
-
-            postcode_plaats_db = geselecteerde_klant['plaats']
-
-            gevonden_postcode = ""
-            for p in postcodes_lijst:
-                if postcode_plaats_db in p:
-                    gevonden_postcode = p
-                    break
-
-            postcode_var.set(gevonden_postcode if gevonden_postcode else postcodes_lijst[0])
-
-            win.destroy()
+        if not k:
+            return
+        try:
+            tel_entry.delete(0, tk.END);
+            tel_entry.insert(0, k['telefoon'] or "")
+            naam_entry.delete(0, tk.END);
+            naam_entry.insert(0, k['naam'] or "")
+            adres_entry.delete(0, tk.END);
+            adres_entry.insert(0, k['straat'] or "")
+            nr_entry.delete(0, tk.END);
+            nr_entry.insert(0, k['huisnummer'] or "")
+            plaats = k['plaats'] or ""
+            match = next((p for p in postcodes_lijst if plaats in p), "")
+            postcode_var.set(match if match else postcodes_lijst[0])
+        except tk.TclError:
+            pass
+        top.destroy()
 
     zoek_var.trace_add("write", update_zoekresultaten)
-    tree.bind("<Double-1>", lambda event: selecteer_klant_en_sluit())
+    tree.bind("<Double-1>", lambda e: selecteer_klant_en_sluit())
 
-    button_frame = tk.Frame(win, padx=10)
-    button_frame.pack(fill=tk.X, pady=(0, 10))
-    tk.Button(button_frame, text="Selecteer Klant", command=selecteer_klant_en_sluit, bg="#D1FFD1").pack(side=tk.LEFT)
-    tk.Button(button_frame, text="Sluiten", command=win.destroy).pack(side=tk.RIGHT)
-
-
-def voeg_klant_toe_indien_nodig(telefoon, adres, nr, postcode_plaats, naam_of_opmerking):
-    """Voegt een klant toe aan de database als deze nog niet bestaat op basis van telefoonnummer."""
-    if not telefoon:
-        return
-
-    conn = database.get_db_connection()
-    cursor = conn.cursor()
-
-    # Controleer of klant bestaat
-    cursor.execute("SELECT id FROM klanten WHERE telefoon = ?", (telefoon,))
-    bestaande_klant = cursor.fetchone()
-
-    if bestaande_klant is None:
-        # Klant bestaat niet, voeg toe
-        cursor.execute('''
-                       INSERT INTO klanten (telefoon, straat, huisnummer, plaats, naam)
-                       VALUES (?, ?, ?, ?, ?)
-                       ''', (telefoon, adres, nr, postcode_plaats, naam_of_opmerking))
-        conn.commit()
-        print(f"Nieuwe klant ({telefoon}) toegevoegd aan de database.")
-
-    conn.close()
+    btns = tk.Frame(top, padx=10)
+    btns.pack(fill=tk.X, pady=(0, 10))
+    tk.Button(btns, text="Selecteer Klant", command=selecteer_klant_en_sluit, bg="#D1FFD1").pack(side=tk.LEFT)
+    tk.Button(btns, text="Sluiten", command=top.destroy).pack(side=tk.RIGHT)

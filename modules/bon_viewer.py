@@ -35,19 +35,20 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
         klant_data, bestelregels, bonnummer, menu_data_for_drinks=menu_data_global, extras_data=extras_data_global
     )
     # total_header en total_row zijn nu leeg in bon_generator.py, de inhoud zit in details_str
-    header_str, info_str, address_str, details_str, _, _, te_betalen_str, totaal_bedrag_str, footer_str, address_for_qr, bon_width_from_generator = parts
+    header_str, info_str, address_str, details_str, tarief_str, totaal_label, totaal_waarde, te_betalen_str, footer_str, address_for_qr, bon_width_from_generator = parts
 
     # Construct the full text for printing, carefully managing newlines.
     # Each 'part_str' from generate_bon_text already contains its internal newlines
     # and has been formatted for the exact BON_WIDTH.
     # We explicitly add blank lines *between* these major sections for visual separation.
     full_bon_text_for_print = (
-            header_str + "\n\n" +  # Header block, then two newlines for separation
-            info_str.strip() + "\n\n" +  # Info block (strip to remove leading/trailing blank line from info_lines' "" entries), then two newlines
-            address_str + "\n\n" +  # Address block, then two newlines
+            header_str + "\n" +  # Header block, then a single newline for separation
+            info_str.strip() + "\n" +  # Info block, then a single newline
+            address_str + "\n" +  # Address block, then a single newline
             details_str.strip() + "\n" +  # Details block (already includes the BTW table and ends nicely), then one newline
-            te_betalen_str + "\n" +  # Te betalen line
-            totaal_bedrag_str + "\n" +  # Totaal bedrag line
+            tarief_str.strip() + "\n" +  # <-- BTW/ Tarief tabel meenemen in preview/print
+            f"{totaal_label}: {totaal_waarde}\n" +  # Totaal regel correct opgebouwd
+            f"{te_betalen_str}\n" +  # "TE BETALEN!"
             footer_str  # Footer block (contains internal blank lines)
     )
 
@@ -64,7 +65,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     qr_addr_frame.pack(fill="x", pady=(2, 10))
 
     try:
-        maps_url = "https://www.google.com/maps/search/?api=1&query=" + urllib.parse.quote_plus(address_for_qr)
+        maps_url = "https://www.google.com/maps/dir/?api=1&destination=" + urllib.parse.quote_plus(
+            address_for_qr) + "&dir_action=navigate"
+
         qr = qrcode.QRCode(version=1, box_size=1, border=1)
         qr.add_data(maps_url)
         qr.make(fit=True)
@@ -101,11 +104,9 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     bon_display.config(state='disabled')  # Maak de tekst alleen-lezen
 
     def print_bon_action():
-        # Vraag bevestiging om op te slaan en af te drukken
-        if messagebox.askyesno("Bevestiging", "Wilt u deze bestelling opslaan en afdrukken?"):
-            # Roep de callback functie aan uit main.py om op te slaan en vervolgens af te drukken
-            save_and_print_callback(full_bon_text_for_print)
-            bon_win.destroy()  # Sluit het preview venster na printen
+        # De extra bevestiging is verwijderd. De actie wordt direct uitgevoerd.
+        save_and_print_callback(full_bon_text_for_print, address_for_qr)
+        bon_win.destroy()
 
     # Knoppen voor Printen en Sluiten
     button_frame = Frame(main_bon_frame, pady=5)

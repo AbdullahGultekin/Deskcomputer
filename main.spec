@@ -6,7 +6,11 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
+<<<<<<< HEAD
     hiddenimports=[],
+=======
+    hiddenimports=['PIL._imaging'],
+>>>>>>> 4f113cffd0d744ed423a99ea87fa79520dab8f80
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -29,11 +33,14 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+<<<<<<< HEAD
     icon=['logo.ico'],
+=======
+>>>>>>> 4f113cffd0d744ed423a99ea87fa79520dab8f80
 )
