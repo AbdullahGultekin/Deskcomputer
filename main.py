@@ -1545,7 +1545,7 @@ def setup_menu_interface():
 
     # ========== RECHTERKANT: BESTELOVERZICHT ==========
     right_panel = tk.Frame(menu_main_panel)
-    menu_main_panel.add(right_panel, minsize=400)
+    menu_main_panel.add(right_panel, minsize=380)
 
     bestel_frame = tk.LabelFrame(right_panel, text="Besteloverzicht", padx=10, pady=10)
     bestel_frame.pack(fill=tk.BOTH, expand=True)
