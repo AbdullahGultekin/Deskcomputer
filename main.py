@@ -528,7 +528,7 @@ info@pitapizzanapoli.be
             ESC = b'\x1b'
             GS = b'\x1d'
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # Dubbele hoogte+breedte
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte+breedte
             for addr_line in address_content:
                 win32print.WritePrinter(hprinter, addr_line.encode('cp858', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
@@ -623,7 +623,7 @@ info@pitapizzanapoli.be
                 klant_opm = (klant_data.get("opmerking") or "").strip()
                 if klant_opm:
                     win32print.WritePrinter(hprinter, b'\n')
-                    win32print.WritePrinter(hprinter, ESC + b'a' + b'\x01')  # Centreren
+                    win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Centreren
                     win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Vet aan
                     win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte aan
                     opmerking_text = f"Opmerking:\n{klant_opm}"
@@ -1460,7 +1460,7 @@ def setup_menu_interface():
 
     # ========== LINKERKANT ==========
     menu_selection_frame = tk.Frame(menu_main_panel)
-    menu_main_panel.add(menu_selection_frame, minsize=950)
+    menu_main_panel.add(menu_selection_frame, minsize=1100)
 
     preferred_order = app_settings.get("category_order", [])
 
@@ -1560,7 +1560,7 @@ def setup_menu_interface():
 
     # ========== RECHTERKANT: BESTELOVERZICHT ==========
     right_panel = tk.Frame(menu_main_panel)
-    menu_main_panel.add(right_panel, minsize=380)
+    menu_main_panel.add(right_panel, minsize=350)
 
     bestel_frame = tk.LabelFrame(right_panel, text="Besteloverzicht", padx=10, pady=10)
     bestel_frame.pack(fill=tk.BOTH, expand=True)

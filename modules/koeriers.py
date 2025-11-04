@@ -26,7 +26,7 @@ def open_koeriers(root):
 
     # ===================== LINKERZIJDE: BESTELLINGEN =====================
     left = tk.Frame(paned, padx=10, pady=10)
-    paned.add(left, minsize=480)
+    paned.add(left, minsize=350)
 
     # Filterbalk
     filter_frame = tk.Frame(left)
@@ -98,7 +98,7 @@ def open_koeriers(root):
 
     # ===================== RECHTERZIJDE: KOERIERS + AFREKENING =====================
     right = tk.Frame(paned, padx=10, pady=10)
-    paned.add(right, minsize=700)
+    paned.add(right, minsize=1000)
 
     tk.Label(right, text="Koeriers", font=("Arial", 13, "bold")).pack(anchor="w")
 
