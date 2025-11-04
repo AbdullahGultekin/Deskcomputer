@@ -721,7 +721,22 @@ def find_printer_usb_ids():
     except ImportError:
         messagebox.showerror("Fout", "PyUSB niet geïnstalleerd. Installeer met: pip install pyusb")
 
+def show_print_preview(event=None):
+    klant_data, order_items, temp_bonnummer = _get_current_order_data()
+    if klant_data is None:  # Geen geldige data om te previewen
+        return
 
+    # Toon het afdrukvoorbeeld
+    open_bon_viewer(
+        root,
+        klant_data,
+        order_items,
+        temp_bonnummer,
+        menu_data,
+        EXTRAS,
+        app_settings,
+        _save_and_print_from_preview  # Geef de callback mee
+    )
 def update_overzicht():
     global overzicht, bestelregels
     overzicht.delete(1.0, tk.END)
@@ -1594,7 +1609,11 @@ def setup_menu_interface():
     btns = tk.Frame(bestel_frame)
     btns.pack(fill=tk.X)
 
-                                                                               
+
+    # Nieuwe knop: Bestelbon afdrukken (preview/print)
+    tk.Button(btns, text="Print", command=show_print_preview, bg="#D1FFE1").pack(side=tk.LEFT,
+                                                                                 padx=(0, 8))
+
 
     def _get_selected_indices_from_text():
         try:
@@ -1799,7 +1818,9 @@ def on_tab_changed(event):
 
 app_tabs.bind("<<NotebookTabChanged>>", on_tab_changed)
 
-
+# Sneltoetsen
+root.bind("<Control-p>", show_print_preview)
+root.bind("<Command-p>", show_print_preview)
 
 # Startcategorie
 categories = load_menu_categories()

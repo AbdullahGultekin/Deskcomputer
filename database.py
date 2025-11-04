@@ -177,6 +177,14 @@ def create_tables():
                        )
                    ''')
 
+    # Controleer het schema van bon_teller en herstel het indien nodig.
+    # Dit is nodig voor oudere databases waar de 'dag' kolom nog niet bestond.
+    cursor.execute("PRAGMA table_info(bon_teller)")
+    bon_teller_cols = [row[1] for row in cursor.fetchall()]
+    if bon_teller_cols and 'dag' not in bon_teller_cols:
+        print("Verouderde 'bon_teller' tabel gedetecteerd. Tabel wordt opnieuw aangemaakt om het schema te corrigeren.")
+        cursor.execute("DROP TABLE IF EXISTS bon_teller")
+
     # Bon-teller tabel
     cursor.execute('''
                    CREATE TABLE IF NOT EXISTS bon_teller
@@ -200,7 +208,6 @@ def create_tables():
                        dag
                    )
                        )
-
                    ''')
 
     # Favoriete bestellingen (per klant)
