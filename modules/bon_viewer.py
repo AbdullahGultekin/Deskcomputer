@@ -88,7 +88,11 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     Label(qr_addr_frame, text=address_str, font=("Courier New", 8), justify="center",
           anchor="center").pack(anchor="center", pady=(0, 8))
 
-    # ScrolledText widget voor het afdrukvoorbeeld
+    # Knoppen voor Printen en Sluiten - aan de onderkant plaatsen zodat ze altijd zichtbaar zijn.
+    button_frame = Frame(main_bon_frame, pady=5)
+    button_frame.pack(side="bottom", fill="x")
+
+    # ScrolledText widget voor het afdrukvoorbeeld (vult de rest van de ruimte)
     bon_display = scrolledtext.ScrolledText(
         main_bon_frame,
         wrap=tk.NONE,  # GEEN WORD WRAPPING! De tekst is al geformatteerd.
@@ -108,10 +112,7 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
         save_and_print_callback(full_bon_text_for_print, address_for_qr, klant_data)
         bon_win.destroy()
 
-    # Knoppen voor Printen en Sluiten
-    button_frame = Frame(main_bon_frame, pady=5)
-    button_frame.pack(fill="x")
-
+    # De knoppen toevoegen aan het button_frame (dat al gepackt is)
     Button(button_frame, text="Afdrukken", command=print_bon_action, bg="#D1FFD1").pack(side="left", padx=(0, 5))
     Button(button_frame, text="Sluiten", command=bon_win.destroy, bg="#FFADAD").pack(side="right")
 
