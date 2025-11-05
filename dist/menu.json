@@ -1,0 +1,1914 @@
+{
+  "schotels": [
+    {
+      "id": 101,
+      "naam": "Natuur",
+      "prijs": 20.0,
+      "desc": ""
+    },
+    {
+      "id": 102,
+      "naam": "Jonge Kaas",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 103,
+      "naam": "Feta",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 104,
+      "naam": "Champignons",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 105,
+      "naam": "Pikant",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 106,
+      "naam": "Hawaï",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 107,
+      "naam": "Maïs",
+      "prijs": 21.0,
+      "desc": ""
+    },
+    {
+      "id": 108,
+      "naam": "Special",
+      "prijs": 22.0,
+      "desc": ""
+    },
+    {
+      "id": 109,
+      "naam": "Mexicano",
+      "prijs": 22.0,
+      "desc": ""
+    },
+    {
+      "id": 110,
+      "naam": "Tropical",
+      "prijs": 22.0,
+      "desc": ""
+    },
+    {
+      "id": 111,
+      "naam": "Vrasene Special",
+      "prijs": 24.0,
+      "desc": ""
+    },
+    {
+      "id": 112,
+      "naam": "Chef Special",
+      "prijs": 24.0,
+      "desc": ""
+    }
+  ],
+  "grote-broodjes": [
+    {
+      "id": 201,
+      "naam": "Natuur",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 202,
+      "naam": "Jonge Kaas",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 203,
+      "naam": "Feta",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 204,
+      "naam": "Champignons",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 205,
+      "naam": "Pikant",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 206,
+      "naam": "Hawaï",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 207,
+      "naam": "Maïs",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 208,
+      "naam": "Special",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 209,
+      "naam": "Mexicano",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 210,
+      "naam": "Tropical",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 211,
+      "naam": "Vrasene Special",
+      "prijs": 14,
+      "desc": ""
+    },
+    {
+      "id": 212,
+      "naam": "Chef Special",
+      "prijs": 14,
+      "desc": ""
+    }
+  ],
+  "turks-brood": [
+    {
+      "id": 301,
+      "naam": "Natuur",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 302,
+      "naam": "Jonge Kaas",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 303,
+      "naam": "Feta",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 304,
+      "naam": "Champignons",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 305,
+      "naam": "Pikant",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 306,
+      "naam": "Hawaï",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 307,
+      "naam": "Maïs",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 308,
+      "naam": "Special",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 309,
+      "naam": "Mexicano",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 310,
+      "naam": "Tropical",
+      "prijs": 13,
+      "desc": ""
+    },
+    {
+      "id": 311,
+      "naam": "Vrasene Special",
+      "prijs": 14,
+      "desc": ""
+    },
+    {
+      "id": 312,
+      "naam": "Chef Special",
+      "prijs": 14,
+      "desc": ""
+    }
+  ],
+  "klein-broodjes": [
+    {
+      "id": 401,
+      "naam": "Natuur",
+      "prijs": 9,
+      "desc": ""
+    },
+    {
+      "id": 402,
+      "naam": "Jonge Kaas",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 403,
+      "naam": "Feta",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 404,
+      "naam": "Champignons",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 405,
+      "naam": "Pikant",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 406,
+      "naam": "Hawaï",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 407,
+      "naam": "Maïs",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 408,
+      "naam": "Special",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 409,
+      "naam": "Mexicano",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 410,
+      "naam": "Tropical",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 411,
+      "naam": "Vrasene Special",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 412,
+      "naam": "Chef Special",
+      "prijs": 12,
+      "desc": ""
+    }
+  ],
+  "durum": [
+    {
+      "id": 501,
+      "naam": "Natuur",
+      "prijs": 9,
+      "desc": ""
+    },
+    {
+      "id": 502,
+      "naam": "Jonge Kaas",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 503,
+      "naam": "Feta",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 504,
+      "naam": "Champignons",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 505,
+      "naam": "Pikant",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 506,
+      "naam": "Hawaï",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 507,
+      "naam": "Maïs",
+      "prijs": 10,
+      "desc": ""
+    },
+    {
+      "id": 508,
+      "naam": "Special",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 509,
+      "naam": "Mexicano",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 510,
+      "naam": "Tropical",
+      "prijs": 11,
+      "desc": ""
+    },
+    {
+      "id": 511,
+      "naam": "Vrasene Special",
+      "prijs": 12,
+      "desc": ""
+    },
+    {
+      "id": 512,
+      "naam": "Chef Special",
+      "prijs": 12,
+      "desc": ""
+    }
+  ],
+  "Kapsalons": [
+    {
+      "id": 601,
+      "naam": "Kapsalon kip",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 606,
+      "naam": "Kapsalon lams",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 607,
+      "naam": "Kapsalon pita",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 602,
+      "naam": "Kapsalon kip/lams",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 603,
+      "naam": "Kapsalon kip/pita",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 605,
+      "naam": "Kapsalon pita/lams",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 604,
+      "naam": "Kapsalon kip/lams/pita",
+      "prijs": 17.0,
+      "desc": ""
+    }
+  ],
+  "Large pizza's": [
+    {
+      "id": 701,
+      "naam": "1. Margherita",
+      "prijs": 20.0,
+      "desc": "tomatensaus en mozzarella"
+    },
+    {
+      "id": 702,
+      "naam": "2. Boromeo",
+      "prijs": 21.0,
+      "desc": "ham"
+    },
+    {
+      "id": 703,
+      "naam": "3. Tropical",
+      "prijs": 21.0,
+      "desc": "ananas en maïs"
+    },
+    {
+      "id": 704,
+      "naam": "4. Funghi",
+      "prijs": 21.0,
+      "desc": "champignons"
+    },
+    {
+      "id": 705,
+      "naam": "5. Cipolla",
+      "prijs": 21.0,
+      "desc": "ui"
+    },
+    {
+      "id": 706,
+      "naam": "6. Salame",
+      "prijs": 21.0,
+      "desc": "salami"
+    },
+    {
+      "id": 707,
+      "naam": "7. Romana",
+      "prijs": 22.0,
+      "desc": "champignons, artisjok en olijven"
+    },
+    {
+      "id": 708,
+      "naam": "8. Capricciosa",
+      "prijs": 22.0,
+      "desc": "ham en champignons"
+    },
+    {
+      "id": 709,
+      "naam": "9. Siciliane",
+      "prijs": 23.0,
+      "desc": "ansjovis, kappertjes en olijven"
+    },
+    {
+      "id": 710,
+      "naam": "10. Quattro stagione",
+      "prijs": 24.0,
+      "desc": "ham, champignons, paprika en salami"
+    },
+    {
+      "id": 711,
+      "naam": "11. Vegetariana",
+      "prijs": 24.0,
+      "desc": "champignons, paprika, ui, olijven, tomaat en spinazie"
+    },
+    {
+      "id": 712,
+      "naam": "12. Bolognese",
+      "prijs": 22.0,
+      "desc": "bolognesesaus"
+    },
+    {
+      "id": 713,
+      "naam": "13. Pescatore",
+      "prijs": 24.0,
+      "desc": "zeevruchten"
+    },
+    {
+      "id": 714,
+      "naam": "14. Quattro formaggi",
+      "prijs": 25.0,
+      "desc": "vier soorten kaas"
+    },
+    {
+      "id": 715,
+      "naam": "15. Pollo hawaï",
+      "prijs": 23.0,
+      "desc": "kip, ananas en potje currysaus"
+    },
+    {
+      "id": 716,
+      "naam": "16. Americana",
+      "prijs": 21.0,
+      "desc": "pikante salami"
+    },
+    {
+      "id": 717,
+      "naam": "17. Niet van toepassing",
+      "prijs": 0.0,
+      "desc": ""
+    },
+    {
+      "id": 718,
+      "naam": "18. Speciale",
+      "prijs": 24.0,
+      "desc": "ham, paprika, ui en maïs"
+    },
+    {
+      "id": 719,
+      "naam": "19. Hawaï",
+      "prijs": 22.0,
+      "desc": "ham en ananas"
+    },
+    {
+      "id": 720,
+      "naam": "20. Pizzaiolo",
+      "prijs": 24.0,
+      "desc": "gerookte zalm, gorgonzola en knoflook"
+    },
+    {
+      "id": 721,
+      "naam": "21. Exotica",
+      "prijs": 25.0,
+      "desc": "kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 722,
+      "naam": "22. Romantica",
+      "prijs": 23.0,
+      "desc": "pitalvlees en potje looksaus"
+    },
+    {
+      "id": 723,
+      "naam": "23. Cagliari",
+      "prijs": 22.0,
+      "desc": "salami en champignons"
+    },
+    {
+      "id": 724,
+      "naam": "24. Maffia",
+      "prijs": 24.0,
+      "desc": "scampi’s 8st, ansjovis en knoflook"
+    },
+    {
+      "id": 725,
+      "naam": "25. Tonno",
+      "prijs": 24.0,
+      "desc": "tonijn, paprika en ui"
+    },
+    {
+      "id": 726,
+      "naam": "26. Rustica",
+      "prijs": 25.0,
+      "desc": "vier soorten kaas, ui en pikante saus"
+    },
+    {
+      "id": 727,
+      "naam": "27. Marinara",
+      "prijs": 25.0,
+      "desc": "scampi’s, calamares, garnalen, zalm en knoflook"
+    },
+    {
+      "id": 728,
+      "naam": "28. Agnello",
+      "prijs": 24.0,
+      "desc": "lamsvlees, paprika en potje cocktailsaus"
+    },
+    {
+      "id": 729,
+      "naam": "29. Encarnà",
+      "prijs": 23.0,
+      "desc": "ham en salami"
+    },
+    {
+      "id": 730,
+      "naam": "30. Napoli complete",
+      "prijs": 30.0,
+      "desc": "vlees, vis en groenten"
+    },
+    {
+      "id": 731,
+      "naam": "31. Picante",
+      "prijs": 23.0,
+      "desc": "pikante salami en pikante pepers"
+    },
+    {
+      "id": 732,
+      "naam": "32. Niet van toepassing",
+      "prijs": 0.0,
+      "desc": ""
+    },
+    {
+      "id": 733,
+      "naam": "33. Spinaci",
+      "prijs": 24.0,
+      "desc": "spinazie, ham en ei"
+    },
+    {
+      "id": 734,
+      "naam": "34. Mozzarella",
+      "prijs": 24.0,
+      "desc": "mozzarella en verse tomaat"
+    },
+    {
+      "id": 735,
+      "naam": "35. Fetomato",
+      "prijs": 24.0,
+      "desc": "feta, verse tomaat en pikante saus"
+    },
+    {
+      "id": 736,
+      "naam": "36. Crema sognare",
+      "prijs": 24.0,
+      "desc": "ham, ui en roomsaus"
+    },
+    {
+      "id": 737,
+      "naam": "37. Bbq chicken",
+      "prijs": 27.0,
+      "desc": "barbecuesaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 738,
+      "naam": "38. Bbq meatballs",
+      "prijs": 27.0,
+      "desc": "barbecuesaus, gehaktballetjes, ui, paprika en mozzarella"
+    },
+    {
+      "id": 739,
+      "naam": "39. Fritte",
+      "prijs": 23.0,
+      "desc": "friet en potje mayonaise"
+    },
+    {
+      "id": 740,
+      "naam": "40. Tonnolieviano",
+      "prijs": 27.0,
+      "desc": "olijven, tonijn, feta, champignons"
+    },
+    {
+      "id": 741,
+      "naam": "41. Arrabbiata",
+      "prijs": 21.0,
+      "desc": "paprika en pikante saus"
+    },
+    {
+      "id": 742,
+      "naam": "42. Romantica lams",
+      "prijs": 24.0,
+      "desc": "lamsvlees en potje looksaus"
+    },
+    {
+      "id": 743,
+      "naam": "43. Curry pollo hawaï",
+      "prijs": 25.0,
+      "desc": "warme currysaus, kip, ananas en potje currysaus"
+    },
+    {
+      "id": 744,
+      "naam": "44. Curry exotica",
+      "prijs": 26.0,
+      "desc": "warme currysaus, kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 745,
+      "naam": "45. Curry chicken",
+      "prijs": 27.0,
+      "desc": "warme currysaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 746,
+      "naam": "46. Carne piena",
+      "prijs": 30.0,
+      "desc": "pitalvlees, kip, lamsvlees, ham, salami"
+    },
+    {
+      "id": 747,
+      "naam": "47. Salmonacci",
+      "prijs": 27.0,
+      "desc": "zalm, spinazie, knoflook"
+    },
+    {
+      "id": 748,
+      "naam": "48. Verdure",
+      "prijs": 25.0,
+      "desc": "paprika, ui, champignons, artisjok, kappertjes"
+    },
+    {
+      "id": 749,
+      "naam": "49. Pescantono",
+      "prijs": 27.0,
+      "desc": "zeevruchten, ansjovis, tonijn"
+    },
+    {
+      "id": 750,
+      "naam": "50. Half half",
+      "prijs": 30.0,
+      "desc": "keuze uit twee genummerde pizza's"
+    }
+  ],
+  "Medium pizza's": [
+    {
+      "id": 801,
+      "naam": "1. Margherita",
+      "prijs": 12.0,
+      "desc": "tomatensaus en mozzarella"
+    },
+    {
+      "id": 802,
+      "naam": "2. Boromeo",
+      "prijs": 13.0,
+      "desc": "ham"
+    },
+    {
+      "id": 803,
+      "naam": "3. Tropical",
+      "prijs": 13.0,
+      "desc": "ananas en maïs"
+    },
+    {
+      "id": 804,
+      "naam": "4. Funghi",
+      "prijs": 13.0,
+      "desc": "champignons"
+    },
+    {
+      "id": 805,
+      "naam": "5. Cipolla",
+      "prijs": 13.0,
+      "desc": "ui"
+    },
+    {
+      "id": 806,
+      "naam": "6. Salame",
+      "prijs": 13.0,
+      "desc": "salami"
+    },
+    {
+      "id": 807,
+      "naam": "7. Romana",
+      "prijs": 14.0,
+      "desc": "champignons, artisjok en olijven"
+    },
+    {
+      "id": 808,
+      "naam": "8. Capricciosa",
+      "prijs": 14.0,
+      "desc": "ham en champignons"
+    },
+    {
+      "id": 809,
+      "naam": "9. Siciliane",
+      "prijs": 15.0,
+      "desc": "ansjovis, kappertjes en olijven"
+    },
+    {
+      "id": 810,
+      "naam": "10. Quattro Stagione",
+      "prijs": 16.0,
+      "desc": "ham, champignons, paprika en salami"
+    },
+    {
+      "id": 811,
+      "naam": "11. Vegetariana",
+      "prijs": 16.0,
+      "desc": "champignons, paprika, ui, olijven, tomaat en spinazie"
+    },
+    {
+      "id": 812,
+      "naam": "12. Bolognese",
+      "prijs": 14.0,
+      "desc": "bolognesesaus"
+    },
+    {
+      "id": 813,
+      "naam": "13. Pescatore",
+      "prijs": 16.0,
+      "desc": "zeevruchten"
+    },
+    {
+      "id": 814,
+      "naam": "14. Quattro Formaggi",
+      "prijs": 17.0,
+      "desc": "vier soorten kaas"
+    },
+    {
+      "id": 815,
+      "naam": "15. Pollo hawaï",
+      "prijs": 15.0,
+      "desc": "kip, ananas en potje currysaus"
+    },
+    {
+      "id": 816,
+      "naam": "16. Americana",
+      "prijs": 13.0,
+      "desc": "pikante salami"
+    },
+    {
+      "id": 817,
+      "naam": "17. Calzone (dubbelgevouwen)",
+      "prijs": 16.0,
+      "desc": "bolognese, ham, champignons, paprika en salami"
+    },
+    {
+      "id": 818,
+      "naam": "18. Speciale",
+      "prijs": 16.0,
+      "desc": "ham, paprika, ui en maïs"
+    },
+    {
+      "id": 819,
+      "naam": "19. Hawaï",
+      "prijs": 14.0,
+      "desc": "ham en ananas"
+    },
+    {
+      "id": 820,
+      "naam": "20. Pizzaiolo",
+      "prijs": 16.0,
+      "desc": "gerookte zalm, gorgonzola en knoflook"
+    },
+    {
+      "id": 821,
+      "naam": "21. Exotica",
+      "prijs": 17.0,
+      "desc": "kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 822,
+      "naam": "22. Romantica",
+      "prijs": 15.0,
+      "desc": "pittavlees en potje looksaus"
+    },
+    {
+      "id": 823,
+      "naam": "23. Cagliari",
+      "prijs": 14.0,
+      "desc": "salami en champignons"
+    },
+    {
+      "id": 824,
+      "naam": "24. Maffia",
+      "prijs": 16.0,
+      "desc": "scampi's 4st, ansjovis en knoflook"
+    },
+    {
+      "id": 825,
+      "naam": "25. Tonno",
+      "prijs": 16.0,
+      "desc": "tonijn, paprika en ui"
+    },
+    {
+      "id": 826,
+      "naam": "26. Rustica",
+      "prijs": 17.0,
+      "desc": "vier soorten kaas, ui en pikante saus"
+    },
+    {
+      "id": 827,
+      "naam": "27. Marinara",
+      "prijs": 17.0,
+      "desc": "scampi's, calamares, garnalen, zalm en knoflook"
+    },
+    {
+      "id": 828,
+      "naam": "28. Agnello",
+      "prijs": 16.0,
+      "desc": "lamsvlees, paprika en potje cocktailsaus"
+    },
+    {
+      "id": 829,
+      "naam": "29. Encarna",
+      "prijs": 15.0,
+      "desc": "ham en salami"
+    },
+    {
+      "id": 830,
+      "naam": "30. Napoli complete",
+      "prijs": 22.0,
+      "desc": "vlees, vis en groenten"
+    },
+    {
+      "id": 831,
+      "naam": "31. Picante",
+      "prijs": 15.0,
+      "desc": "pikante salami en pikante pepers"
+    },
+    {
+      "id": 832,
+      "naam": "32. Borecci (dubbelgevouwen)",
+      "prijs": 16.0,
+      "desc": "feta, verse tomaat, ui en pikante saus"
+    },
+    {
+      "id": 833,
+      "naam": "33. Spinaci",
+      "prijs": 16.0,
+      "desc": "spinazie, ham en ei"
+    },
+    {
+      "id": 834,
+      "naam": "34. Mozzarella",
+      "prijs": 16.0,
+      "desc": "mozzarella en verse tomaat"
+    },
+    {
+      "id": 835,
+      "naam": "35. Fetomato",
+      "prijs": 16.0,
+      "desc": "feta, verse tomaat en pikante saus"
+    },
+    {
+      "id": 836,
+      "naam": "36. Crema sognare",
+      "prijs": 16.0,
+      "desc": "ham, ui en roomsaus"
+    },
+    {
+      "id": 837,
+      "naam": "37. Bbq chicken",
+      "prijs": 19.0,
+      "desc": "barbecuesaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 838,
+      "naam": "38. Bbq meatballs",
+      "prijs": 19.0,
+      "desc": "barbecuesaus, gehaktballetjes, ui, paprika en mozzarella"
+    },
+    {
+      "id": 839,
+      "naam": "39. Fritte",
+      "prijs": 15.0,
+      "desc": "frieten en potje mayonaise"
+    },
+    {
+      "id": 840,
+      "naam": "40. Tonnoliveiano",
+      "prijs": 19.0,
+      "desc": "olijven, tonijn, feta, champignons"
+    },
+    {
+      "id": 841,
+      "naam": "41. Arrabiatta",
+      "prijs": 13.0,
+      "desc": "paprika en pikante saus"
+    },
+    {
+      "id": 842,
+      "naam": "42. Romantica lams",
+      "prijs": 16.0,
+      "desc": "lamsvlees en potje looksaus"
+    },
+    {
+      "id": 843,
+      "naam": "43. Curry pollo hawaï",
+      "prijs": 17.0,
+      "desc": "warme currysaus, kip, ananas en potje currysaus"
+    },
+    {
+      "id": 844,
+      "naam": "44. Curry exotica",
+      "prijs": 18.0,
+      "desc": "warme currysaus, kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 845,
+      "naam": "45. Curry chicken",
+      "prijs": 19.0,
+      "desc": "warme currysaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 846,
+      "naam": "46. Carne piena",
+      "prijs": 22.0,
+      "desc": "pittavlees, kip, lamsvlees, ham, salami"
+    },
+    {
+      "id": 847,
+      "naam": "47. Salmonacci",
+      "prijs": 19.0,
+      "desc": "zalm, spinazie, knoflook"
+    },
+    {
+      "id": 848,
+      "naam": "48. Verdure",
+      "prijs": 17.0,
+      "desc": "paprika, ui, champignons, artisjok, kappertjes"
+    },
+    {
+      "id": 849,
+      "naam": "49. Pescatonno",
+      "prijs": 19.0,
+      "desc": "zeevruchten, ansjovis, tonijn"
+    },
+    {
+      "id": 850,
+      "naam": "50. Half half",
+      "prijs": 20.0,
+      "desc": "keuze uit twee genummerde pizza's"
+    }
+  ],
+  "Small pizza's": [
+    {
+      "id": 901,
+      "naam": "1. Margherita",
+      "prijs": 10.0,
+      "desc": "tomatensaus en mozzarella"
+    },
+    {
+      "id": 902,
+      "naam": "2. Boromeo",
+      "prijs": 11.0,
+      "desc": "ham"
+    },
+    {
+      "id": 903,
+      "naam": "3. Tropical",
+      "prijs": 11.0,
+      "desc": "ananas en maïs"
+    },
+    {
+      "id": 904,
+      "naam": "4. Funghi",
+      "prijs": 11.0,
+      "desc": "champignons"
+    },
+    {
+      "id": 905,
+      "naam": "5. Cipolla",
+      "prijs": 11.0,
+      "desc": "ui"
+    },
+    {
+      "id": 906,
+      "naam": "6. Salame",
+      "prijs": 11.0,
+      "desc": "salami"
+    },
+    {
+      "id": 907,
+      "naam": "7. Romana",
+      "prijs": 12.0,
+      "desc": "champignons, artisjok en olijven"
+    },
+    {
+      "id": 908,
+      "naam": "8. Capricciosa",
+      "prijs": 12.0,
+      "desc": "ham en champignons"
+    },
+    {
+      "id": 909,
+      "naam": "9. Siciliane",
+      "prijs": 13.0,
+      "desc": "ansjovis, kappertjes en olijven"
+    },
+    {
+      "id": 910,
+      "naam": "10. Quattro Stagione",
+      "prijs": 14.0,
+      "desc": "ham, champignons, paprika en salami"
+    },
+    {
+      "id": 911,
+      "naam": "11. Vegetariana",
+      "prijs": 14.0,
+      "desc": "champignons, paprika, ui, olijven, tomaat en spinazie"
+    },
+    {
+      "id": 912,
+      "naam": "12. Bolognese",
+      "prijs": 12.0,
+      "desc": "bolognesesaus"
+    },
+    {
+      "id": 913,
+      "naam": "13. Pescatore",
+      "prijs": 14.0,
+      "desc": "zeevruchten"
+    },
+    {
+      "id": 914,
+      "naam": "14. Quattro Formaggi",
+      "prijs": 14.0,
+      "desc": "vier soorten kaas"
+    },
+    {
+      "id": 915,
+      "naam": "15. Pollo hawaï",
+      "prijs": 13.0,
+      "desc": "kip, ananas en potje currysaus"
+    },
+    {
+      "id": 916,
+      "naam": "16. Americana",
+      "prijs": 11.0,
+      "desc": "pikante salami"
+    },
+    {
+      "id": 917,
+      "naam": "17. Calzone (dubbelgevouwen)",
+      "prijs": 14.0,
+      "desc": "bolognese, ham, champignons, paprika en salami"
+    },
+    {
+      "id": 918,
+      "naam": "18. Speciale",
+      "prijs": 14.0,
+      "desc": "ham, paprika, ui en maïs"
+    },
+    {
+      "id": 919,
+      "naam": "19. Hawaï",
+      "prijs": 12.0,
+      "desc": "ham en ananas"
+    },
+    {
+      "id": 920,
+      "naam": "20. Pizzaiolo",
+      "prijs": 14.0,
+      "desc": "gerookte zalm, gorgonzola en knoflook"
+    },
+    {
+      "id": 921,
+      "naam": "21. Exotica",
+      "prijs": 15.0,
+      "desc": "kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 922,
+      "naam": "22. Romantica",
+      "prijs": 13.0,
+      "desc": "pittavlees en potje looksaus"
+    },
+    {
+      "id": 923,
+      "naam": "23. Cagliari",
+      "prijs": 12.0,
+      "desc": "salami en champignons"
+    },
+    {
+      "id": 924,
+      "naam": "24. Maffia",
+      "prijs": 14.0,
+      "desc": "scampi's 4st, ansjovis en knoflook"
+    },
+    {
+      "id": 925,
+      "naam": "25. Tonno",
+      "prijs": 14.0,
+      "desc": "tonijn, paprika en ui"
+    },
+    {
+      "id": 926,
+      "naam": "26. Rustica",
+      "prijs": 15.0,
+      "desc": "vier soorten kaas, ui en pikante saus"
+    },
+    {
+      "id": 927,
+      "naam": "27. Marinara",
+      "prijs": 15.0,
+      "desc": "scampi's, calamares, garnalen, zalm en knoflook"
+    },
+    {
+      "id": 928,
+      "naam": "28. Agnello",
+      "prijs": 14.0,
+      "desc": "lamsvlees, paprika en potje cocktailsaus"
+    },
+    {
+      "id": 929,
+      "naam": "29. Encarna",
+      "prijs": 13.0,
+      "desc": "ham en salami"
+    },
+    {
+      "id": 930,
+      "naam": "30. Napoli complete",
+      "prijs": 20.0,
+      "desc": "vlees, vis en groenten"
+    },
+    {
+      "id": 931,
+      "naam": "31. Picante",
+      "prijs": 13.0,
+      "desc": "pikante salami en pikante pepers"
+    },
+    {
+      "id": 932,
+      "naam": "32. Borecci (dubbelgevouwen)",
+      "prijs": 14.0,
+      "desc": "feta, verse tomaat, ui en pikante saus"
+    },
+    {
+      "id": 933,
+      "naam": "33. Spinaci",
+      "prijs": 14.0,
+      "desc": "spinazie, ham en ei"
+    },
+    {
+      "id": 934,
+      "naam": "34. Mozzarella",
+      "prijs": 14.0,
+      "desc": "mozzarella en verse tomaat"
+    },
+    {
+      "id": 935,
+      "naam": "35. Fetomato",
+      "prijs": 14.0,
+      "desc": "feta, verse tomaat en pikante saus"
+    },
+    {
+      "id": 936,
+      "naam": "36. Crema sognare",
+      "prijs": 14.0,
+      "desc": "ham, ui en roomsaus"
+    },
+    {
+      "id": 937,
+      "naam": "37. Bbq chicken",
+      "prijs": 17.0,
+      "desc": "barbecuesaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 938,
+      "naam": "38. Bbq meatballs",
+      "prijs": 17.0,
+      "desc": "barbecuesaus, gehaktballetjes, ui, paprika en mozzarella"
+    },
+    {
+      "id": 939,
+      "naam": "39. Fritte",
+      "prijs": 13.0,
+      "desc": "frieten en potje mayonaise"
+    },
+    {
+      "id": 940,
+      "naam": "40. Tonnoliveiano",
+      "prijs": 17.0,
+      "desc": "olijven, tonijn, feta, champignons"
+    },
+    {
+      "id": 941,
+      "naam": "41. Arrabiatta",
+      "prijs": 11.0,
+      "desc": "paprika en pikante saus"
+    },
+    {
+      "id": 942,
+      "naam": "42. Romantica lams",
+      "prijs": 14.0,
+      "desc": "lamsvlees en potje looksaus"
+    },
+    {
+      "id": 943,
+      "naam": "43. Curry pollo hawaï",
+      "prijs": 15.0,
+      "desc": "warme currysaus, kip, ananas en potje currysaus"
+    },
+    {
+      "id": 944,
+      "naam": "44. Curry exotica",
+      "prijs": 16.0,
+      "desc": "warme currysaus, kip, paprika, ui en potje samuraisaus"
+    },
+    {
+      "id": 945,
+      "naam": "45. Curry chicken",
+      "prijs": 17.0,
+      "desc": "warme currysaus, kip, ui, paprika en mozzarella"
+    },
+    {
+      "id": 946,
+      "naam": "46. Carne piena",
+      "prijs": 20.0,
+      "desc": "pittavlees, kip, lamsvlees, ham, salami"
+    },
+    {
+      "id": 947,
+      "naam": "47. Salmonacci",
+      "prijs": 17.0,
+      "desc": "zalm, spinazie, knoflook"
+    },
+    {
+      "id": 948,
+      "naam": "48. Verdure",
+      "prijs": 15.0,
+      "desc": "paprika, ui, champignons, artisjok, kappertjes"
+    },
+    {
+      "id": 949,
+      "naam": "49. Pescatonno",
+      "prijs": 19.0,
+      "desc": "zeevruchten, ansjovis, tonijn"
+    },
+    {
+      "id": 950,
+      "naam": "50. Half half",
+      "prijs": 18.0,
+      "desc": "keuze uit twee genummerde pizza's"
+    }
+  ],
+  "lookbrood": [
+    {
+      "id": 951,
+      "naam": "Lookbrood",
+      "prijs": 5,
+      "desc": ""
+    },
+    {
+      "id": 952,
+      "naam": "Lookbrood kaas",
+      "prijs": 6,
+      "desc": ""
+    },
+    {
+      "id": 953,
+      "naam": "Lookbrood feta",
+      "prijs": 6,
+      "desc": ""
+    },
+    {
+      "id": 954,
+      "naam": "Lookbrood ham",
+      "prijs": 7,
+      "desc": ""
+    },
+    {
+      "id": 955,
+      "naam": "Lookbrood Salami",
+      "prijs": 7,
+      "desc": ""
+    },
+    {
+      "id": 956,
+      "naam": "Lookbrood ham salami",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 957,
+      "naam": "Lookbrood kaas salami",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 958,
+      "naam": "Lookbrood feta salami",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 959,
+      "naam": "Lookbrood kaas ham",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 960,
+      "naam": "Lookbrood feta ham",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 961,
+      "naam": "Lookbrood kaas tomaat",
+      "prijs": 8,
+      "desc": ""
+    },
+    {
+      "id": 962,
+      "naam": "Lookbrood feta tomaat",
+      "prijs": 8,
+      "desc": ""
+    }
+  ],
+  "sauzen": [
+    {
+      "id": 1001,
+      "naam": "Mayonaise",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1002,
+      "naam": "Ketchup",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1003,
+      "naam": "Looksaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1004,
+      "naam": "Samuraisaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1005,
+      "naam": "Andalousesaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1006,
+      "naam": "Looksaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1007,
+      "naam": "Currysaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1008,
+      "naam": "Provencaalse",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1009,
+      "naam": "Bbqsaus",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1009,
+      "naam": "Sambal",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1010,
+      "naam": "Coctailsaus",
+      "prijs": 1.5,
+      "desc": ""
+    }
+  ],
+  "pasta's": [
+    {
+      "id": 1101,
+      "naam": "Kinder spaghetti",
+      "prijs": 10.0,
+      "desc": ""
+    },
+    {
+      "id": 1102,
+      "naam": "Napolitana",
+      "prijs": 10.0,
+      "desc": ""
+    },
+    {
+      "id": 1103,
+      "naam": "Carbonara",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 1104,
+      "naam": "Boromeo",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 1105,
+      "naam": "Bolognese",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 1106,
+      "naam": "Funghi",
+      "prijs": 14.0,
+      "desc": ""
+    },
+    {
+      "id": 1107,
+      "naam": "Pollo",
+      "prijs": 15.0,
+      "desc": ""
+    },
+    {
+      "id": 1108,
+      "naam": "Diabolique",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 1109,
+      "naam": "Tonno",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 1110,
+      "naam": "Salmone",
+      "prijs": 16.0,
+      "desc": ""
+    },
+    {
+      "id": 1111,
+      "naam": "Frutti di mare",
+      "prijs": 18.0,
+      "desc": ""
+    },
+    {
+      "id": 1112,
+      "naam": "Quattro formaggi",
+      "prijs": 18.0,
+      "desc": ""
+    },
+    {
+      "id": 1113,
+      "naam": "Dello chef",
+      "prijs": 18.0,
+      "desc": ""
+    },
+    {
+      "id": 1114,
+      "naam": "Pollo verdure",
+      "prijs": 20.0,
+      "desc": ""
+    },
+    {
+      "id": 1115,
+      "naam": "Lams verdure",
+      "prijs": 20.0,
+      "desc": ""
+    },
+    {
+      "id": 1116,
+      "naam": "Sardegna",
+      "prijs": 20.0,
+      "desc": ""
+    }
+  ],
+  "alforno": [
+    {
+      "id": 1201,
+      "naam": "Lasagne",
+      "prijs": 15.0,
+      "desc": ""
+    }
+  ],
+  "mix schotels": [
+    {
+      "id": 1301,
+      "naam": "Falafel schotel",
+      "prijs": 15,
+      "desc": ""
+    },
+    {
+      "id": 1302,
+      "naam": "Napoli speciaal 1 persoon",
+      "prijs": 24,
+      "desc": ""
+    },
+    {
+      "id": 1303,
+      "naam": "Napoli speciaal 2 personen",
+      "prijs": 45,
+      "desc": ""
+    }
+  ],
+  "visgerechten": [
+    {
+      "id": 1401,
+      "naam": "Calamares schotel",
+      "prijs": 15.0,
+      "desc": ""
+    },
+    {
+      "id": 1402,
+      "naam": "Scampi dello chef",
+      "prijs": 20.0,
+      "desc": ""
+    },
+    {
+      "id": 1403,
+      "naam": "Scampi diabolique",
+      "prijs": 20.0,
+      "desc": ""
+    },
+    {
+      "id": 1404,
+      "naam": "Zalm schotel",
+      "prijs": 25.0,
+      "desc": ""
+    }
+  ],
+  "vegetarisch broodjes": [
+    {
+      "id": 1501,
+      "naam": "Feta",
+      "prijs": 4.0,
+      "desc": ""
+    },
+    {
+      "id": 1502,
+      "naam": "Kaas",
+      "prijs": 4.0,
+      "desc": ""
+    },
+    {
+      "id": 1503,
+      "naam": "Kaas met tomaten",
+      "prijs": 5.0,
+      "desc": ""
+    },
+    {
+      "id": 1504,
+      "naam": "Feta met tomaten",
+      "prijs": 5.0,
+      "desc": ""
+    },
+    {
+      "id": 1505,
+      "naam": "Kaas met groenten",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1506,
+      "naam": "Feta met groenten",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1507,
+      "naam": "Calamares",
+      "prijs": 8.0,
+      "desc": ""
+    },
+    {
+      "id": 1508,
+      "naam": "Falafel",
+      "prijs": 8.0,
+      "desc": ""
+    }
+  ],
+  "dranken": [
+    {
+      "id": 1601,
+      "naam": "Coca cola",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1602,
+      "naam": "Cola zero",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1603,
+      "naam": "Fanta",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1604,
+      "naam": "Sprite",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1605,
+      "naam": "Ice tea",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1606,
+      "naam": "Minute maid",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1607,
+      "naam": "Red bull",
+      "prijs": 3.0,
+      "desc": "250ml"
+    },
+    {
+      "id": 1608,
+      "naam": "Spa blauw",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1609,
+      "naam": "Spa rood",
+      "prijs": 2.5,
+      "desc": "33cl"
+    },
+    {
+      "id": 1614,
+      "naam": "Jupiler",
+      "prijs": 3,
+      "desc": "33cl"
+    },
+    {
+      "id": 1610,
+      "naam": "Fles Coca cola",
+      "prijs": 5.0,
+      "desc": "1,5l"
+    },
+    {
+      "id": 1611,
+      "naam": "Fles Cola zero",
+      "prijs": 5.0,
+      "desc": "1,5l"
+    },
+    {
+      "id": 1612,
+      "naam": "Fles Fanta",
+      "prijs": 5.0,
+      "desc": "1,5l"
+    },
+    {
+      "id": 1613,
+      "naam": "Fles Ice tea",
+      "prijs": 5.0,
+      "desc": "1,5l"
+    }
+  ],
+  "salades": [
+    {
+      "id": 1701,
+      "naam": "Mixed salade klein",
+      "prijs": 4.0,
+      "desc": ""
+    },
+    {
+      "id": 1702,
+      "naam": "Mixed salade groot",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1703,
+      "naam": "Feta salade",
+      "prijs": 7.0,
+      "desc": ""
+    },
+    {
+      "id": 1704,
+      "naam": "Kip salade",
+      "prijs": 7.0,
+      "desc": ""
+    },
+    {
+      "id": 1705,
+      "naam": "Griekse salade",
+      "prijs": 7.0,
+      "desc": ""
+    },
+    {
+      "id": 1706,
+      "naam": "Tonijn salade",
+      "prijs": 8.0,
+      "desc": ""
+    },
+    {
+      "id": 1707,
+      "naam": "Zalm salade",
+      "prijs": 10.0,
+      "desc": ""
+    }
+  ],
+  "extra's": [
+    {
+      "id": 1801,
+      "naam": "Extra brood",
+      "prijs": 1.5,
+      "desc": ""
+    },
+    {
+      "id": 1802,
+      "naam": "Portie frieten",
+      "prijs": 5.0,
+      "desc": ""
+    },
+    {
+      "id": 1803,
+      "naam": "Cream cheese jalapenos",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1804,
+      "naam": "Portie kroketten",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1805,
+      "naam": "Portie olijven",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1806,
+      "naam": "Portie falafel",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1807,
+      "naam": "Portie calamares",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1808,
+      "naam": "Portie aardappelen",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1809,
+      "naam": "Portie gemengde pepers",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1810,
+      "naam": "Portie zachte pepers",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1811,
+      "naam": "Portie pikante pepers",
+      "prijs": 6.0,
+      "desc": ""
+    },
+    {
+      "id": 1812,
+      "naam": "Portie feta",
+      "prijs": 8.0,
+      "desc": ""
+    },
+    {
+      "id": 1813,
+      "naam": "American potatoes",
+      "prijs": 9.0,
+      "desc": ""
+    },
+    {
+      "id": 1814,
+      "naam": "Chicken wings",
+      "prijs": 10.0,
+      "desc": ""
+    },
+    {
+      "id": 1815,
+      "naam": "Chicken nuggets",
+      "prijs": 10.0,
+      "desc": ""
+    },
+    {
+      "id": 1816,
+      "naam": "Chicken bouts",
+      "prijs": 10.0,
+      "desc": ""
+    },
+    {
+      "id": 1817,
+      "naam": "Portie feta met olijven",
+      "prijs": 10.0,
+      "desc": ""
+    }
+  ],
+  "desserten": [
+    {
+      "id": 1901,
+      "naam": "Chocomousse",
+      "prijs": 4.0,
+      "desc": ""
+    },
+    {
+      "id": 1902,
+      "naam": "Tiramisu",
+      "prijs": 4.0,
+      "desc": ""
+    }
+  ]
+}

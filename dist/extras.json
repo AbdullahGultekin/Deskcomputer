@@ -1,0 +1,597 @@
+{
+  "schotels": {
+    "vlees": [
+      "Pita",
+      "Kip",
+      "Lams",
+      "Kalkoen"
+    ],
+    "bijgerecht": [
+      "Frieten",
+      "Brood",
+      "Kroketten",
+      "Aardappelen"
+    ],
+    "sauzen": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "sauzen_aantal": 2,
+    "garnering": {
+      "Halfpita": 1,
+      "Halfkip": 1,
+      "Halflams": 1,
+      "Halfkalkoen": 1,
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 2,
+      "Mozzarella": 2,
+      "Jonge kaas": 2,
+      "Feta": 2,
+      "Champignons": 1,
+      "Pita": 5,
+      "Lams": 5,
+      "Kalkoen": 5,
+      "Kip": 5
+    }
+  },
+  "durum": {
+    "vlees": [
+      "Pita",
+      "Kip",
+      "Lams",
+      "Kalkoen"
+    ],
+    "saus": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "garnering": {
+      "Halfpita": 1,
+      "Halfkip": 1,
+      "Halflams": 1,
+      "Halfkalkoen": 1,
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 1,
+      "Mozzarella": 1,
+      "Jonge kaas": 1,
+      "Feta": 1,
+      "Champignons": 1,
+      "Pita": 2,
+      "Lams": 2,
+      "Kalkoen": 2,
+      "Kip": 2,
+      "saus apart": 0,
+      "saus erin": 0
+    }
+  },
+  "turks-brood": {
+    "vlees": [
+      "Pita",
+      "Kip",
+      "Lams",
+      "Kalkoen"
+    ],
+    "saus": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "garnering": {
+      "Halfpita": 1,
+      "Halfkip": 1,
+      "Halflams": 1,
+      "Halfkalkoen": 1,
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 1,
+      "Mozzarella": 1,
+      "Jonge kaas": 1,
+      "Feta": 1,
+      "Champignons": 1,
+      "Pita": 2,
+      "Lams": 2,
+      "Kalkoen": 2,
+      "Kip": 2,
+      "saus apart": 0,
+      "saus erin": 0
+    }
+  },
+  "grote-broodjes": {
+    "vlees": [
+      "Pita",
+      "Kip",
+      "Lams",
+      "Kalkoen"
+    ],
+    "saus": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "garnering": {
+      "Halfpita": 1,
+      "Halfkip": 1,
+      "Halflams": 1,
+      "Halfkalkoen": 1,
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 2,
+      "Mozzarella": 2,
+      "Jonge kaas": 2,
+      "Feta": 2,
+      "Champignons": 1,
+      "Pita": 3,
+      "Lams": 3,
+      "Kalkoen": 3,
+      "Kip": 3
+    }
+  },
+  "klein-broodjes": {
+    "vlees": [
+      "Pita",
+      "Kip",
+      "Lams",
+      "Kalkoen"
+    ],
+    "saus": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "garnering": {
+      "Halfpita": 1,
+      "Halfkip": 1,
+      "Halflams": 1,
+      "Halfkalkoen": 1,
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 1,
+      "Mozzarella": 1,
+      "Jonge kaas": 1,
+      "Feta": 1,
+      "Champignons": 1,
+      "Pita": 2,
+      "Lams": 2,
+      "Kalkoen": 2,
+      "Kip": 2
+    }
+  },
+  "kapsalons": {
+    "saus": [
+      "Looksaus",
+      "Samurai",
+      "Cocktail",
+      "Currysaus",
+      "Provencaalse",
+      "Andalouse",
+      "Ketchup",
+      "Mayonaise",
+      "Sambal",
+      "Bbqsaus"
+    ],
+    "garnering": {
+      "Ananas": 1,
+      "Maïs": 1,
+      "Paprika": 1,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Pikante pepers": 1,
+      "Zachte pepers": 1,
+      "Gorgonzola": 1,
+      "Mozzarella": 1,
+      "Jonge kaas": 1,
+      "Feta": 1,
+      "Champignons": 1,
+      "saus erin": 0
+    }
+  },
+  "large pizza's": {
+    "garnering": {
+      "Ananas": 3,
+      "Ansjovis": 4,
+      "Artisjok": 3,
+      "Bbq saus": 2,
+      "Bolognese": 4,
+      "Calamares": 4,
+      "Champignons": 3,
+      "Cheesy crust rand": 4,
+      "Ei": 3,
+      "Feta": 4,
+      "Garnalen": 4,
+      "Gorgonzola": 4,
+      "Ham": 4,
+      "Jonge kaas": 4,
+      "Kappertjes": 3,
+      "Kip": 4,
+      "Knoflook": 1,
+      "Mais": 3,
+      "Meatballs": 4,
+      "Mozzarella": 4,
+      "Olijven": 3,
+      "Paprika": 3,
+      "Pikante olie": 1,
+      "Pikante pepers": 3,
+      "Pikante salami": 4,
+      "Pikante saus": 1,
+      "Pita": 4,
+      "Salami": 4,
+      "Scampi's": 4,
+      "Spinazie": 3,
+      "Tonijn": 4,
+      "Ui": 3,
+      "Verse tomaat": 3,
+      "Zachte pepers": 3,
+      "Zalm": 4
+    },
+    "Half half": {
+      "halve_pizza_keuze_lijst": true
+    }
+  },
+  "medium pizza's": {
+    "garnering": {
+      "Ananas": 2,
+      "Ansjovis": 3,
+      "Artisjok": 2,
+      "Bbq saus": 1,
+      "Bolognese": 3,
+      "Calamares": 3,
+      "Champignons": 2,
+      "Cheesy crust rand": 3,
+      "Ei": 2,
+      "Feta": 3,
+      "Garnalen": 3,
+      "Gorgonzola": 3,
+      "Ham": 3,
+      "Jonge kaas": 3,
+      "Kappertjes": 2,
+      "Kip": 3,
+      "Knoflook": 1,
+      "Mais": 2,
+      "Meatballs": 3,
+      "Mozzarella": 3,
+      "Olijven": 2,
+      "Paprika": 2,
+      "Pikante olie": 1,
+      "Pikante pepers": 2,
+      "Pikante salami": 3,
+      "Pikante saus": 1,
+      "Pita": 3,
+      "Salami": 3,
+      "Scampi's": 3,
+      "Spinazie": 2,
+      "Tonijn": 3,
+      "Ui": 2,
+      "Verse tomaat": 2,
+      "Zachte pepers": 2,
+      "Zalm": 3
+    },
+    "Half half": {
+      "halve_pizza_keuze_lijst": true
+    }
+  },
+  "small pizza's": {
+    "garnering": {
+      "Ananas": 1,
+      "Ansjovis": 2,
+      "Artisjok": 1,
+      "Bbq saus": 1,
+      "Bolognese": 2,
+      "Calamares": 2,
+      "Champignons": 1,
+      "Cheesy crust rand": 2,
+      "Ei": 1,
+      "Feta": 2,
+      "Garnalen": 2,
+      "Gorgonzola": 2,
+      "Ham": 2,
+      "Jonge kaas": 2,
+      "Kappertjes": 1,
+      "Kip": 2,
+      "Knoflook": 1,
+      "Mais": 1,
+      "Meatballs": 2,
+      "Mozzarella": 2,
+      "Olijven": 1,
+      "Paprika": 1,
+      "Pikante olie": 1,
+      "Pikante pepers": 1,
+      "Pikante salami": 2,
+      "Pikante saus": 1,
+      "Pita": 2,
+      "Salami": 2,
+      "Scampi's": 2,
+      "Spinazie": 1,
+      "Tonijn": 2,
+      "Ui": 1,
+      "Verse tomaat": 1,
+      "Zachte pepers": 1,
+      "Zalm": 2
+    },
+    "Half half": {
+      "halve_pizza_keuze_lijst": true
+    }
+  },
+  "pasta's": {
+    "bijgerecht": [
+      "Spaghetti",
+      "Tagliatelli",
+      "Macaroni"
+    ],
+    "garnering": {
+      "Ananas": 1,
+      "Feta": 2,
+      "Jonge kaas": 2,
+      "Mozzarella": 2,
+      "Champignons": 1,
+      "Paprika": 1,
+      "Gorgonzola": 2,
+      "Kip": 2,
+      "Lams": 2,
+      "Pikante pepers": 1,
+      "Pikante roomsaus": 1,
+      "Ui": 1,
+      "Tonijn": 2,
+      "Zalm": 2,
+      "Zeevruchten": 2,
+      "Ham": 2,
+      "Mais": 1,
+      "Olijven": 1,
+      "Salami": 1,
+      "Spinazie": 1,
+      "Verse tomaat": 1
+    }
+  },
+  "mix schotels": {
+    "sauzen_aantal": 2,
+    "Napoli speciaal 2 personen": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "bijgerecht_aantal": 2,
+      "sauzen": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Curry",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Bbqsaus"
+      ],
+      "sauzen_aantal": 4,
+      "garnering": {
+        "Extra feta": 4
+      }
+    },
+    "default": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ],
+      "sauzen_aantal": 2,
+      "garnering": {
+        "Extra feta": 2
+      }
+    }
+  },
+  "visgerechten": {
+    "Calamares schotel": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ],
+      "sauzen_aantal": 2,
+      "garnering": {
+        "Extra scampi": 3
+      }
+    },
+    "Scampi dello chef": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {
+        "Extra scampi": 3
+      }
+    },
+    "Scampi diabolique": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {
+        "Extra scampi": 3
+      }
+    },
+    "Zalm schotel": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "sauzen": [],
+      "sauzen_aantal": 0,
+      "garnering": {}
+    },
+    "default": {
+      "bijgerecht": [
+        "Frieten",
+        "Brood",
+        "Kroketten",
+        "Aardappelen"
+      ],
+      "garnering": {
+        "Extra scampi": 3
+      }
+    }
+  },
+  "extra's": {
+    "American potatoes": {
+      "saus": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ]
+    },
+    "Chicken wings": {
+      "saus": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ]
+    },
+    "Chicken bouts": {
+      "saus": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ]
+    },
+    "Chicken nuggets": {
+      "saus": [
+        "Looksaus",
+        "Samurai",
+        "Cocktail",
+        "Currysaus",
+        "Provencaalse",
+        "Andalouse",
+        "Ketchup",
+        "Mayonaise",
+        "Sambal",
+        "Bbqsaus"
+      ]
+    }
+  },
+  "alforno": {},
+  "lookbrood": {},
+  "vegetarisch broodjes": {},
+  "dranken": {},
+  "salades": {},
+  "desserten": {},
+  "sauzen": {}
+}
