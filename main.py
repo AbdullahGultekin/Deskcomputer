@@ -1859,7 +1859,8 @@ def load_tab_content(title):
         elif title == "Klanten":
             open_klant_management(parent)
         elif title == "Geschiedenis":
-            open_geschiedenis(parent, menu_data, EXTRAS, app_settings)
+            # Belangrijk: geef de laad_bestelling callback mee
+            open_geschiedenis(parent, menu_data, EXTRAS, app_settings, laad_bestelling_voor_aanpassing)
         elif title == "Rapportage":
             open_rapportage(parent)
         elif title == "Backup/Restore":
