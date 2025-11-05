@@ -1,137 +1,136 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-import datetime
-import json
+from tkinter import ttk, messagebox, simpledialog
 import database
+import json
 from modules.bon_viewer import open_bon_viewer
 
 
-def open_geschiedenis(root, menu_data_global, extras_data_global, app_settings_global):
-    # root is tab-frame; embed i.p.v. Toplevel
-    win = root
+def open_geschiedenis(root, menu_data_global, extras_data_global, app_settings_global, laad_bestelling_callback):
+    """
+    Opent de geschiedenistab met de mogelijkheid om bestellingen te bekijken,
+    te filteren en opnieuw te laden voor bewerking.
+    """
+    for widget in root.winfo_children():
+        widget.destroy()
 
-    for w in win.winfo_children():
-        w.destroy()
+    # --- Frames ---
+    top_frame = tk.Frame(root)
+    top_frame.pack(fill=tk.X, padx=10, pady=10)
+    tree_frame = tk.Frame(root)
+    tree_frame.pack(fill=tk.BOTH, expand=True, padx=10)
+    bottom_frame = tk.Frame(root)
+    bottom_frame.pack(fill=tk.X, padx=10, pady=10)
 
-    tree_frame = tk.Frame(win)
-    tree_frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+    # --- Filters ---
+    tk.Label(top_frame, text="Zoek op naam/telefoon/adres:").pack(side=tk.LEFT, padx=(0, 5))
+    search_var = tk.StringVar()
+    search_entry = tk.Entry(top_frame, textvariable=search_var, width=30)
+    search_entry.pack(side=tk.LEFT, padx=5)
 
-    cols = ('tijd', 'adres', 'nr', 'gemeente', 'tel', 'prijs', 'bonnummer', 'bestelling')
-    tree = ttk.Treeview(tree_frame, columns=cols, show='headings')
+    tk.Label(top_frame, text="Datum (YYYY-MM-DD):").pack(side=tk.LEFT, padx=(15, 5))
+    date_var = tk.StringVar()
+    date_entry = tk.Entry(top_frame, textvariable=date_var, width=12)
+    date_entry.pack(side=tk.LEFT, padx=5)
 
-    tree.heading('tijd', text='Tijd')
-    tree.column('tijd', width=60, anchor='center')
-    tree.heading('adres', text='Adres')
-    tree.column('adres', width=200)
-    tree.heading('nr', text='Nr')
-    tree.column('nr', width=40, anchor='center')
-    tree.heading('gemeente', text='Gemeente')
-    tree.column('gemeente', width=120)
-    tree.heading('tel', text='Telefoon')
-    tree.column('tel', width=100)
-    tree.heading('prijs', text='Prijs (€)')
-    tree.column('prijs', width=60, anchor='e')
-    tree.heading('bonnummer', text='Bon Nr.')
-    tree.column('bonnummer', width=70, anchor='center')
-    tree.heading('bestelling', text='Details Bestelling')
-    tree.column('bestelling', width=350)
-
-    tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-    scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
-    tree.configure(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-    def laad_geschiedenis():
+    def refresh_data(*args):
+        """Haalt data op en vult de treeview."""
         for i in tree.get_children():
             tree.delete(i)
 
-        vandaag_str = datetime.date.today().strftime('%Y-%m-%d')
         conn = database.get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("""
-                       SELECT b.id,
-                              b.tijd,
-                              b.totaal,
-                              b.bonnummer,
-                              k.telefoon,
-                              k.straat,
-                              k.huisnummer,
-                              k.plaats
-                       FROM bestellingen b
-                                JOIN klanten k ON b.klant_id = k.id
-                       WHERE b.datum = ?
-                       ORDER BY b.tijd DESC
-                       """, (vandaag_str,))
-        bestellingen_vandaag = cursor.fetchall()
 
-        for bestelling in bestellingen_vandaag:
-            cursor.execute("SELECT aantal, product FROM bestelregels WHERE bestelling_id = ?", (bestelling['id'],))
-            regels = cursor.fetchall()
-            details_list = [f"{r['aantal']}x {r['product']}" for r in regels]
-            bestel_details_str = ", ".join(details_list)
+        query = """
+                SELECT b.id, \
+                       b.datum, \
+                       b.tijd, \
+                       b.totaal, \
+                       b.bonnummer, \
+                       k.naam, \
+                       k.telefoon, \
+                       k.straat, \
+                       k.huisnummer
+                FROM bestellingen b
+                         JOIN klanten k ON b.klant_id = k.id \
+                """
+        params = []
+        conditions = []
 
-            gemeente = ' '.join(bestelling['plaats'].split()[1:]) if ' ' in bestelling['plaats'] else ''
+        search_term = search_var.get().strip()
+        if search_term:
+            conditions.append("(k.naam LIKE ? OR k.telefoon LIKE ? OR k.straat LIKE ?)")
+            params.extend([f"%{search_term}%"] * 3)
 
-            tree.insert("", "end", iid=bestelling['id'], values=(
-                bestelling['tijd'],
-                bestelling['straat'],
-                bestelling['huisnummer'],
-                gemeente,
-                bestelling['telefoon'],
-                f"{bestelling['totaal']:.2f}",
-                bestelling['bonnummer'],
-                bestel_details_str
-            ))
+        date_term = date_var.get().strip()
+        if date_term:
+            conditions.append("b.datum = ?")
+            params.append(date_term)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += " ORDER BY b.datum DESC, b.tijd DESC"
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
         conn.close()
 
-    def wis_vandaag_geschiedenis():
-        if messagebox.askyesno("Bevestig",
-                               "Weet u zeker dat u ALLE bestellingen van vandaag wilt verwijderen? Dit kan niet ongedaan worden gemaakt."):
-            vandaag_str = datetime.date.today().strftime('%Y-%m-%d')
-            conn = database.get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM bestellingen WHERE datum = ?", (vandaag_str,))
-            bestelling_ids = [row[0] for row in cursor.fetchall()]
-            if bestelling_ids:
-                cursor.executemany("DELETE FROM bestelregels WHERE bestelling_id = ?",
-                                   [(bid,) for bid in bestelling_ids])
-                cursor.execute("DELETE FROM bestellingen WHERE datum = ?", (vandaag_str,))
-                conn.commit()
-            conn.close()
-            laad_geschiedenis()
+        for row in rows:
+            adres = f"{row['straat'] or ''} {row['huisnummer'] or ''}"
+            tree.insert("", "end", iid=row['id'], values=(
+                row['datum'], row['tijd'], row['bonnummer'], row['naam'], row['telefoon'], adres,
+                f"€ {row['totaal']:.2f}"
+            ))
 
-    def verwijder_geselecteerde_rij():
-        selected_items = tree.selection()
-        if not selected_items:
-            messagebox.showwarning("Selectie", "Selecteer eerst een bestelling om te verwijderen.")
-            return
-        if messagebox.askyesno("Bevestig", "Weet u zeker dat u de geselecteerde bestelling(en) wilt verwijderen?"):
-            conn = database.get_db_connection()
-            cursor = conn.cursor()
-            bestelling_ids_to_delete = [(int(iid),) for iid in selected_items]
-            cursor.executemany("DELETE FROM bestelregels WHERE bestelling_id = ?", bestelling_ids_to_delete)
-            cursor.executemany("DELETE FROM bestellingen WHERE id = ?", bestelling_ids_to_delete)
-            conn.commit()
-            conn.close()
-            laad_geschiedenis()
+    search_var.trace_add("write", refresh_data)
+    date_var.trace_add("write", refresh_data)
+    tk.Button(top_frame, text="Vernieuwen", command=refresh_data, bg="#E1E1FF").pack(side=tk.LEFT, padx=10)
 
-    def herdruk_bon():
+    # --- Treeview ---
+    columns = ('datum', 'tijd', 'bon', 'naam', 'telefoon', 'adres', 'totaal')
+    tree = ttk.Treeview(tree_frame, columns=columns, show='headings')
+    tree.heading('datum', text='Datum')
+    tree.heading('tijd', text='Tijd')
+    tree.heading('bon', text='Bonnummer')
+    tree.heading('naam', text='Naam')
+    tree.heading('telefoon', text='Telefoon')
+    tree.heading('adres', text='Adres')
+    tree.heading('totaal', text='Totaal')
+
+    for col in columns:
+        tree.column(col, width=120)
+    tree.column('adres', width=250)
+    tree.column('naam', width=150)
+
+    vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+    tree.configure(yscrollcommand=vsb.set)
+    vsb.pack(side='right', fill='y')
+    tree.pack(side='left', fill='both', expand=True)
+
+    def bewerk_en_herdruk_bon():
+        """Laadt een oude bestelling in het hoofdscherm om te bewerken."""
         selected_item_id = tree.focus()
         if not selected_item_id:
-            messagebox.showwarning("Selectie Fout", "Selecteer alstublieft een bestelling om te herdrukken.")
+            messagebox.showwarning("Selectie Fout", "Selecteer alstublieft een bestelling om te bewerken.", parent=root)
             return
+
         bestelling_id = int(selected_item_id)
+
+        if not messagebox.askyesno("Bevestigen",
+                                   "Weet u zeker dat u deze bestelling wilt laden om te bewerken?\n\n"
+                                   "De originele bestelling wordt hierbij verwijderd en vervangen door de nieuwe versie na het opslaan.",
+                                   icon='warning', parent=root):
+            return
+
         conn = database.get_db_connection()
         cursor = conn.cursor()
         try:
+            # Haal bestelgegevens op
             cursor.execute("""
                            SELECT b.id,
                                   b.bonnummer,
                                   b.opmerking,
                                   b.klant_id,
-                                  b.totaal,
-                                  b.datum,
-                                  b.tijd,
                                   k.telefoon,
                                   k.straat,
                                   k.huisnummer,
@@ -143,21 +142,26 @@ def open_geschiedenis(root, menu_data_global, extras_data_global, app_settings_g
                            """, (bestelling_id,))
             bestelling = cursor.fetchone()
             if not bestelling:
-                messagebox.showerror("Fout", "Bestelling niet gevonden in de database.")
+                messagebox.showerror("Fout", "Bestelling niet gevonden in de database.", parent=root)
                 return
 
+            # Bereid klantdata voor
             klant_data = {
+                "klant_id": bestelling['klant_id'],
                 "telefoon": bestelling['telefoon'],
                 "adres": bestelling['straat'],
                 "nr": bestelling['huisnummer'],
                 "postcode_gemeente": bestelling['plaats'],
-                "opmerking": bestelling['opmerking'] if bestelling['opmerking'] else "",
-                "naam": bestelling['naam'] if bestelling['naam'] else ""
+                "opmerking": bestelling['opmerking'] or "",
+                "naam": bestelling['naam'] or ""
             }
 
+            # Haal bestelregels op
             cursor.execute("SELECT categorie, product, aantal, prijs, extras FROM bestelregels WHERE bestelling_id = ?",
                            (bestelling_id,))
             bestelregels_db = cursor.fetchall()
+
+            # Formatteer bestelregels
             formatted_bestelregels = []
             for regel in bestelregels_db:
                 formatted_bestelregels.append({
@@ -168,20 +172,57 @@ def open_geschiedenis(root, menu_data_global, extras_data_global, app_settings_g
                     'extras': json.loads(regel['extras']) if regel['extras'] else {}
                 })
 
-            # bon viewer blijft apart (eigen window) tenzij die ook wordt aangepast.
-            open_bon_viewer(win, klant_data, formatted_bestelregels, bestelling['bonnummer'],
-                            menu_data_global, extras_data_global, app_settings_global)
+            # Roep de callback aan om de data in main.py te laden en de oude bestelling te verwijderen
+            laad_bestelling_callback(klant_data, formatted_bestelregels, bestelling_id)
+
+            # Vernieuw de geschiedenisweergave
+            refresh_data()
+
+        except Exception as e:
+            messagebox.showerror("Fout", f"Er is een fout opgetreden bij het laden van de bestelling: {e}", parent=root)
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
-    button_frame = tk.Frame(win, padx=10, pady=10)
-    button_frame.pack(fill=tk.X)
+    def verwijder_bestelling():
+        """Verwijdert de geselecteerde bestelling volledig."""
+        selected_item_id = tree.focus()
+        if not selected_item_id:
+            messagebox.showwarning("Selectie Fout", "Selecteer een bestelling om te verwijderen.", parent=root)
+            return
 
-    tk.Button(button_frame, text="Herladen", command=laad_geschiedenis, bg="#E1E1FF").pack(side=tk.LEFT)
-    tk.Button(button_frame, text="Bon Herdrukken", command=herdruk_bon, bg="#FFF59D").pack(side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Verwijder Selectie", command=verwijder_geselecteerde_rij, bg="#FFADAD").pack(
-        side=tk.LEFT, padx=10)
-    tk.Button(button_frame, text="Wis Alle Bestellingen van Vandaag", command=wis_vandaag_geschiedenis,
-              bg="#FF5555").pack(side=tk.RIGHT)
+        if messagebox.askyesno("Zeker weten?",
+                               "Weet u zeker dat u deze bestelling definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+                               icon='warning', parent=root):
+            bestelling_id = int(selected_item_id)
+            conn = database.get_db_connection()
+            try:
+                # Haal klant_id op voor het bijwerken van statistieken
+                klant_id = conn.execute("SELECT klant_id FROM bestellingen WHERE id = ?", (bestelling_id,)).fetchone()[
+                    'klant_id']
 
-    laad_geschiedenis()
+                conn.execute("DELETE FROM bestelregels WHERE bestelling_id = ?", (bestelling_id,))
+                conn.execute("DELETE FROM bestellingen WHERE id = ?", (bestelling_id,))
+                conn.commit()
+
+                # Werk statistieken bij
+                if klant_id:
+                    database.update_klant_statistieken(klant_id)
+
+                messagebox.showinfo("Succes", "Bestelling succesvol verwijderd.", parent=root)
+                refresh_data()
+            except Exception as e:
+                conn.rollback()
+                messagebox.showerror("Fout", f"Kon bestelling niet verwijderen: {e}", parent=root)
+            finally:
+                conn.close()
+
+    # --- Knoppen ---
+    tk.Button(bottom_frame, text="Bewerk & Herdruk", command=bewerk_en_herdruk_bon, bg="#D1FFD1").pack(side=tk.LEFT,
+                                                                                                       padx=10, pady=5)
+    tk.Button(bottom_frame, text="Verwijder Bestelling", command=verwijder_bestelling, bg="#FFADAD").pack(side=tk.RIGHT,
+                                                                                                          padx=10,
+                                                                                                          pady=5)
+
+    # --- Start ---
+    refresh_data()
