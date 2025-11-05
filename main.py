@@ -9,7 +9,7 @@ import datetime
 from datetime import timedelta
 import os
 import csv
-import win32print
+#import win32print
 import database
 import tempfile
 import subprocess
@@ -517,6 +517,12 @@ info@pitapizzanapoli.be
 
             win32print.WritePrinter(hprinter, 'Leveringsadres:\n'.encode('cp858'))
 
+            # Maak naam en adres vet en groter
+            ESC = b'\x1b'
+            GS = b'\x1d'
+            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # Dubbele hoogte+breedte
+
             # Klantnaam expliciet printen indien beschikbaar
             if klantnaam:
                 win32print.WritePrinter(hprinter, (klantnaam + '\n').encode('cp858', errors='replace'))
@@ -524,11 +530,6 @@ info@pitapizzanapoli.be
             ## Daarna het adres
             adres_end = dhr_mvr_idx if (dhr_mvr_idx > 0 and dhr_mvr_idx > address_idx) else details_idx
             address_content = bon_lines[address_idx + 1:adres_end] if address_idx > 0 and adres_end > 0 else []
-            # Maak adres vet en 2x groter
-            ESC = b'\x1b'
-            GS = b'\x1d'
-            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte+breedte
             for addr_line in address_content:
                 win32print.WritePrinter(hprinter, addr_line.encode('cp858', errors='replace'))
                 win32print.WritePrinter(hprinter, b'\n')
@@ -545,16 +546,18 @@ info@pitapizzanapoli.be
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
                         break
+
                 # "Details bestelling" vet
                 ESC = b'\x1b'
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                 win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
-                win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
+                # Enkel een lege regel na de titel, geen streepjeslijn
+                win32print.WritePrinter(hprinter, b'\n')
 
                 # Stijl voor besteldetails aanzetten (vet en dubbele hoogte)
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte aan
+
 
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
@@ -562,7 +565,8 @@ info@pitapizzanapoli.be
                     if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
+                            # Tussen items geen streepjeslijn meer; gebruik enkel een lege regel
+                            win32print.WritePrinter(hprinter, b'\n')
                             current_item_lines = []
                         current_item_lines.append(line.replace('?', '€'))
                     else:
@@ -570,15 +574,20 @@ info@pitapizzanapoli.be
                             continue
                         if stripped_line:
                             current_item_lines.append(f"> {stripped_line}")
+
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                    win32print.WritePrinter(hprinter, b'\n')
+                    # Na laatste item: geen extra lege regel hier; we plaatsen straks één duidelijke scheidingslijn
+                    pass
 
                 # Reset de stijl na de besteldetails
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
-                # ==== HIER: Tarief-sectie printen ====
+                # Exact één volledige scheidingslijn aan het einde van de besteldetails
+                win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
+
+            # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
                 sep_line = "-" * 42
                 for i in range(details_end_idx, len(bon_lines)):
@@ -688,6 +697,63 @@ info@pitapizzanapoli.be
             win32print.ClosePrinter(hprinter)
     except Exception as e:
         messagebox.showerror("Fout bij afdrukken", f"Kon de bon niet afdrukken.\n\nFoutdetails: {e}")
+
+
+def laad_bestelling_voor_aanpassing(klant_data, bestelregels_data, oude_bestelling_id):
+    """Laadt een bestaande bestelling in de UI om te bewerken en verwijdert de oude."""
+    if bestelregels and not messagebox.askyesno("Bevestigen",
+                                                "De huidige (onopgeslagen) bestelling wordt gewist om de oude te laden. Weet u zeker dat u wilt doorgaan?"):
+        return
+
+    # 1. Verwijder de oude bestelling uit de database
+    try:
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM bestelregels WHERE bestelling_id = ?", (oude_bestelling_id,))
+        cursor.execute("DELETE FROM bestellingen WHERE id = ?", (oude_bestelling_id,))
+        conn.commit()
+        # Werk klantstatistieken bij na verwijdering.
+        if 'klant_id' in klant_data:
+            database.update_klant_statistieken(klant_data['klant_id'])
+    except Exception as e:
+        messagebox.showerror("Fout", f"Kon de originele bestelling niet verwijderen: {e}")
+        return
+    finally:
+        if conn:
+            conn.close()
+
+    # 2. Leegmaken van de huidige UI
+    telefoon_entry.delete(0, tk.END)
+    naam_entry.delete(0, tk.END)
+    adres_entry.delete(0, tk.END)
+    nr_entry.delete(0, tk.END)
+    opmerkingen_entry.delete(0, tk.END)
+    bestelregels.clear()
+
+    # 3. Laden van de nieuwe data in de UI
+    telefoon_entry.insert(0, klant_data.get('telefoon', ''))
+    naam_entry.insert(0, klant_data.get('naam', ''))
+    adres_entry.insert(0, klant_data.get('adres', ''))
+    nr_entry.insert(0, klant_data.get('nr', ''))
+    opmerkingen_entry.insert(0, klant_data.get('opmerking', ''))
+
+    gevonden_postcode = ""
+    for p in postcodes:
+        if klant_data.get('postcode_gemeente', '') in p:
+            gevonden_postcode = p
+            break
+    postcode_var.set(gevonden_postcode if gevonden_postcode else (postcodes[0] if postcodes else ""))
+
+    # Voeg de bestelregels toe aan de globale lijst
+    for regel in bestelregels_data:
+        bestelregels.append(regel)
+
+    # 4. Refresh UI en navigeer
+    update_overzicht()
+    app_tabs.select(bestellen_tab)  # Switch naar de besteltab
+    messagebox.showinfo("Bestelling Geladen",
+                        "De historische bestelling is geladen en kan nu worden bewerkt. De originele bestelling is verwijderd.")
+
 
 def find_printer_usb_ids():
     """
@@ -1699,7 +1765,7 @@ bestellen_tab = tk.Frame(app_tabs, bg="#F3F2F1")
 app_tabs.add(bestellen_tab, text="Bestellen")
 
 # Hoofdcontainer in Bestellen
-main_frame = tk.Frame(bestellen_tab, padx=10, pady=10, bg="#F3F2F1")
+main_frame = tk.Frame(bestellen_tab, padx=14, pady=14, bg="#F3F2F1")
 main_frame.pack(fill=tk.BOTH, expand=True)
 
 # Klantgegevens

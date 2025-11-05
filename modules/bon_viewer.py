@@ -60,30 +60,73 @@ def open_bon_viewer(root_window, klant_data, bestelregels, bonnummer, menu_data_
     main_bon_frame = Frame(bon_win)
     main_bon_frame.pack(padx=5, pady=5, fill="both", expand=True)
 
+    # ... existing code ...
     # Frame voor de QR-code en adres bovenaan
     qr_addr_frame = Frame(main_bon_frame)
     qr_addr_frame.pack(fill="x", pady=(2, 10))
 
     try:
-        maps_url = "https://www.google.com/maps/dir/?api=1&destination=" + urllib.parse.quote_plus(
-            address_for_qr) + "&dir_action=navigate"
+        # Bouw drie navigatie-URLs voor hetzelfde adres
+        encoded_addr = urllib.parse.quote_plus(address_for_qr)
+        maps_url_google = f"https://www.google.com/maps/dir/?api=1&destination={encoded_addr}&dir_action=navigate"
+        maps_url_apple = f"https://maps.apple.com/?daddr={encoded_addr}&dirflg=d"
+        # Waze: gebruik q=adres (werkt zonder coördinaten)
+        maps_url_waze = f"https://waze.com/ul?q={encoded_addr}&navigate=yes"
 
+        # Maak eenvoudige HTML-landing met drie knoppen/links
+        html_content = f"""<!doctype html>
+    <html lang="nl">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Navigatie kiezen</title>
+      <style>
+        body {{ font-family: Arial, sans-serif; padding: 16px; }}
+        h1 {{ font-size: 18px; margin-bottom: 12px; }}
+        .btn {{ display: block; padding: 12px 14px; margin: 8px 0; text-decoration: none; color: #fff; border-radius: 6px; text-align:center; }}
+        .google {{ background:#4285F4; }}
+        .apple {{ background:#000000; }}
+        .waze {{ background:#33CC99; }}
+        .addr {{ font-size: 13px; color:#444; margin-top: 6px; }}
+      </style>
+    </head>
+    <body>
+      <h1>Kies navigatie-app</h1>
+      <div class="addr">{address_for_qr}</div>
+      <a class="btn google" href="{maps_url_google}">Open in Google Maps</a>
+      <a class="btn apple" href="{maps_url_apple}">Open in Apple Maps</a>
+      <a class="btn waze" href="{maps_url_waze}">Open in Waze</a>
+    </body>
+    </html>"""
+
+        # Schrijf HTML naar tijdelijk bestand en maak file-URL
+        tmp_dir = tempfile.mkdtemp(prefix="bon_nav_")
+        landing_path = os.path.join(tmp_dir, "nav.html")
+        with open(landing_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        # file:// URL voor lokale landing page
+        if sys.platform.startswith("win"):
+            landing_url = "file:///" + landing_path.replace("\\", "/")
+        else:
+            landing_url = "file://" + landing_path
+
+        # Genereer QR naar de landing page
         qr = qrcode.QRCode(version=1, box_size=1, border=1)
-        qr.add_data(maps_url)
+        qr.add_data(landing_url)
         qr.make(fit=True)
-        # Gebruik PIL.Image.ANTIALIAS of Image.LANCZOS voor betere kwaliteit bij resizen
         qr_img = qr.make_image(fill_color='black', back_color='white').resize((50, 50), Image.LANCZOS)
-        bon_win.qr_photo = ImageTk.PhotoImage(qr_img)  # Opslaan referentie om GC te voorkomen
+        bon_win.qr_photo = ImageTk.PhotoImage(qr_img)
 
         qr_lbl = Label(qr_addr_frame, image=bon_win.qr_photo, anchor="center")
         qr_lbl.pack(anchor="center")
-        Label(qr_addr_frame, text="Scan adres", font=("Courier New", 6), anchor="center").pack(
+        Label(qr_addr_frame, text="Scan voor navigatie-keuze", font=("Courier New", 6), anchor="center").pack(
             anchor="center", pady=(0, 3))
     except ImportError:
         Label(qr_addr_frame, text="[QR-fout: PIL of qrcode ontbreekt]", fg='red', anchor="center").pack(anchor="center")
     except Exception as e:
         Label(qr_addr_frame, text=f"[QR-fout: {e}]", fg='red', anchor="center").pack(anchor="center")
-
+    # ... existing code ...
     # Adres onder de QR-code in het preview venster (visueel, hoort niet bij de print-string)
     Label(qr_addr_frame, text=address_str, font=("Courier New", 8), justify="center",
           anchor="center").pack(anchor="center", pady=(0, 8))

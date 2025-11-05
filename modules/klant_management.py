@@ -674,9 +674,87 @@ def open_klant_management(root):
     def bewerk_klant():
         """Bewerkt geselecteerde klant"""
         if not selected_klant['data']:
-            messagebox.showwarning("Selectie", "Selecteer eerst een klant!")
+            messagebox.showwarning("Selectie", "Selecteer eerst een klant om te bewerken!")
             return
-        messagebox.showinfo("Info", "Bewerkfunctionaliteit komt binnenkort!")
+
+        klant = selected_klant['data']
+
+        # Maak het bewerkingsvenster
+        edit_win = tk.Toplevel(win)
+        edit_win.title(f"Klant bewerken: {klant['naam'] or klant['telefoon']}")
+        edit_win.geometry("450x250")
+        edit_win.transient(win)
+        edit_win.grab_set()
+
+        form_frame = tk.Frame(edit_win, padx=15, pady=15)
+        form_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Velden voor klantgegevens
+        fields = {
+            "Telefoon:": tk.StringVar(value=klant['telefoon']),
+            "Naam:": tk.StringVar(value=klant['naam'] or ""),
+            "Straat:": tk.StringVar(value=klant['straat'] or ""),
+            "Huisnummer:": tk.StringVar(value=klant['huisnummer'] or ""),
+            "Plaats:": tk.StringVar(value=klant['plaats'] or "")
+        }
+
+        for i, (label, var) in enumerate(fields.items()):
+            tk.Label(form_frame, text=label, font=("Arial", 10, "bold")).grid(row=i, column=0, sticky="w", pady=3)
+            entry = tk.Entry(form_frame, textvariable=var, font=("Arial", 10), width=40)
+            if label == "Telefoon:":
+                entry.config(state='readonly')  # Telefoonnummer is de sleutel en mag niet gewijzigd worden.
+            entry.grid(row=i, column=1, sticky="ew", padx=(10, 0))
+
+        form_frame.grid_columnconfigure(1, weight=1)
+
+        def save_changes():
+            """Slaat de wijzigingen op in de database."""
+            # Valideer input
+            new_naam = fields["Naam:"].get().strip()
+            if not new_naam:
+                messagebox.showerror("Invoerfout", "De naam mag niet leeg zijn.", parent=edit_win)
+                return
+
+            try:
+                conn = database.get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                               UPDATE klanten
+                               SET naam       = ?,
+                                   straat     = ?,
+                                   huisnummer = ?,
+                                   plaats     = ?
+                               WHERE id = ?
+                               """, (
+                                   new_naam,
+                                   fields["Straat:"].get().strip(),
+                                   fields["Huisnummer:"].get().strip(),
+                                   fields["Plaats:"].get().strip(),
+                                   klant['id']
+                               ))
+                conn.commit()
+                conn.close()
+
+                messagebox.showinfo("Succes", "Klantgegevens succesvol bijgewerkt.", parent=edit_win)
+                edit_win.destroy()
+
+                # Refresh de UI
+                zoek_klanten()  # Vernieuw de lijst
+                # Selecteer de bewerkte klant opnieuw in de treeview, dit triggert de on_klant_select en laadt de details.
+                klanten_tree.selection_set(klant['id'])
+                klanten_tree.focus(klant['id'])
+
+            except Exception as e:
+                messagebox.showerror("Database Fout", f"Kon de klant niet bijwerken: {e}", parent=edit_win)
+
+        # Knoppen
+        button_frame = tk.Frame(edit_win, pady=10)
+        button_frame.pack(fill=tk.X)
+
+        tk.Button(button_frame, text="Opslaan", command=save_changes, bg="#D1FFD1", font=("Arial", 10, "bold")).pack(
+            side=tk.RIGHT, padx=(0, 15))
+        tk.Button(button_frame, text="Annuleren", command=edit_win.destroy, bg="#FFADAD", font=("Arial", 10)).pack(
+            side=tk.RIGHT, padx=10)
 
     def verwijder_klant():
         """Verwijdert geselecteerde klant"""
