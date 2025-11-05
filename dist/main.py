@@ -551,11 +551,13 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                 win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
-                # Halve lijn = lege regel na de sectietitel
+                # kleine ruimte
                 win32print.WritePrinter(hprinter, b'\n')
 
                 # Stijl voor besteldetails aanzetten (enkel vet)
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+
+                dot_line = ('.' * 42 + '\n').encode('cp858')  # stippellijn tussen items
 
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
@@ -566,11 +568,11 @@ info@pitapizzanapoli.be
                         # Flush vorig item
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            # Halve lijn tussen items
-                            win32print.WritePrinter(hprinter, b'\n')
+                            # Stippellijn tussen producten
+                            win32print.WritePrinter(hprinter, dot_line)
                             current_item_lines = []
 
-                        # Hoofdregel van item: vervang ? door €
+                        # Hoofdregel van item
                         current_item_lines.append(line.replace('?', '€'))
                     else:
                         # Sla totaal/te betalen regels in details-blok over
@@ -580,10 +582,9 @@ info@pitapizzanapoli.be
                         if stripped_line:
                             current_item_lines.append(f"> {stripped_line}")
 
-                # Laatste item flushen
+                # Laatste item flushen (zonder extra stippellijn erna)
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                    # Geen extra lege regel hier; er volgt een duidelijke lijn
 
                 # Reset stijl
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
