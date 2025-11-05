@@ -545,39 +545,51 @@ info@pitapizzanapoli.be
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
                         break
+
                 # "Details bestelling" vet
                 ESC = b'\x1b'
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                 win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
-                win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
+                # Halve lijn = lege regel na de sectietitel
+                win32print.WritePrinter(hprinter, b'\n')
 
-                # Stijl voor besteldetails aanzetten (vet en dubbele hoogte)
+                # Stijl voor besteldetails aanzetten (enkel vet)
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte aan
 
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
                     stripped_line = line.strip()
+
+                    # Start van een nieuw item (bijv. "2x ...")
                     if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
+                        # Flush vorig item
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
+                            # Halve lijn tussen items
+                            win32print.WritePrinter(hprinter, b'\n')
                             current_item_lines = []
+
+                        # Hoofdregel van item: vervang ? door €
                         current_item_lines.append(line.replace('?', '€'))
                     else:
-                        if "TE BETALEN" in line:
+                        # Sla totaal/te betalen regels in details-blok over
+                        if "TE BETALEN" in line or "Totaal" in line:
                             continue
+                        # Subregel (bullet)
                         if stripped_line:
                             current_item_lines.append(f"> {stripped_line}")
+
+                # Laatste item flushen
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                    win32print.WritePrinter(hprinter, b'\n')
+                    # Geen extra lege regel hier; er volgt een duidelijke lijn
 
-                # Reset de stijl na de besteldetails
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
+                # Reset stijl
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
+                # Eén duidelijke scheidingslijn na alle items
+                win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
                 # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
                 sep_line = "-" * 42
