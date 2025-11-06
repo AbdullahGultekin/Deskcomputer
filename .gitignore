@@ -1,3 +1,31 @@
-pizzeria.db
-pizzeria.db
-pizzeria.db
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Libraries
+MinGW*/
+VS20*/
+include/
+examples/
+libusb-1.0.def
+
+# Git
+PortableGit/
+
+# Executables
+*.exe
+
+# OS
+desktop.ini
