@@ -217,12 +217,76 @@ def open_geschiedenis(root, menu_data_global, extras_data_global, app_settings_g
             finally:
                 conn.close()
 
-    # --- Knoppen ---
-    tk.Button(bottom_frame, text="Bewerk & Herdruk", command=bewerk_en_herdruk_bon, bg="#D1FFD1").pack(side=tk.LEFT,
-                                                                                                       padx=10, pady=5)
-    tk.Button(bottom_frame, text="Verwijder Bestelling", command=verwijder_bestelling, bg="#FFADAD").pack(side=tk.RIGHT,
-                                                                                                          padx=10,
-                                                                                                          pady=5)
+    def verwijder_alles():
+        """Verwijder alle bestellingen (incl. bestelregels) na bevestiging."""
+        # Eerste bevestiging
+        if not messagebox.askyesno(
+                "Alles verwijderen?",
+                "Weet u zeker dat u ALLE bestellingen permanent wilt verwijderen?\nDit kan niet ongedaan worden gemaakt.",
+                icon='warning', parent=root):
+            return
+        # Extra bevestiging met invoer
+        confirm = simpledialog.askstring(
+            "Bevestig",
+            "Typ VERWIJDER ALLES om te bevestigen:",
+            parent=root
+        )
+        if (confirm or "").strip().upper() != "VERWIJDER ALLES":
+            messagebox.showinfo("Geannuleerd", "Verwijderen geannuleerd.", parent=root)
+            return
 
+        conn = database.get_db_connection()
+        try:
+            # Verzamel betrokken klant_id's voor statistiekupdate
+            klant_ids = [row['klant_id'] for row in conn.execute("SELECT klant_id FROM bestellingen").fetchall()]
+
+            conn.execute("DELETE FROM bestelregels")
+            conn.execute("DELETE FROM bestellingen")
+            conn.commit()
+
+            # Werk statistieken bij voor alle betrokken klanten
+            for kid in set(klant_ids):
+                if kid:
+                    database.update_klant_statistieken(kid)
+
+            messagebox.showinfo("Gereed", "Alle bestellingen zijn verwijderd.", parent=root)
+            refresh_data()
+        except Exception as e:
+            conn.rollback()
+            messagebox.showerror("Fout", f"Kon alle bestellingen niet verwijderen: {e}", parent=root)
+        finally:
+            conn.close()
+
+        # --- Knoppen ---
+        # Iconen laden (houd referenties op het frame zodat ze niet verdwijnen)
+        try:
+            bewerk_icon = tk.PhotoImage(file="icons/edit.png")
+            verwijder_icon = tk.PhotoImage(file="icons/delete.png")
+            verwijder_alles_icon = tk.PhotoImage(file="icons/delete_all.png")
+            # Sla ze op aan het frame (voorkomt GC)
+            bottom_frame._icons = (bewerk_icon, verwijder_icon, verwijder_alles_icon)
+        except Exception:
+            bewerk_icon = verwijder_icon = verwijder_alles_icon = None
+
+        tk.Button(
+            bottom_frame,
+            text="Bewerk & Herdruk",
+            image=bewerk_icon, compound="left",
+            command=bewerk_en_herdruk_bon, bg="#D1FFD1"
+        ).pack(side=tk.LEFT, padx=10, pady=5)
+
+        tk.Button(
+            bottom_frame,
+            text="Verwijder Bestelling",
+            image=verwijder_icon, compound="left",
+            command=verwijder_bestelling, bg="#FFADAD"
+        ).pack(side=tk.RIGHT, padx=10, pady=5)
+
+        tk.Button(
+            bottom_frame,
+            text="Verwijder Alles",
+            image=verwijder_alles_icon, compound="left",
+            command=verwijder_alles, bg="#FF6B6B"
+        ).pack(side=tk.RIGHT, padx=10, pady=5)
     # --- Start ---
     refresh_data()

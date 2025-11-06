@@ -521,7 +521,7 @@ info@pitapizzanapoli.be
             ESC = b'\x1b'
             GS = b'\x1d'
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-            win32print.WritePrinter(hprinter, GS + b'!' + b'\x11')  # Dubbele hoogte+breedte
+            win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # hoogte+breedte
 
             # Klantnaam expliciet printen indien beschikbaar
             if klantnaam:
@@ -556,8 +556,7 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, b'\n')
 
                 # Stijl voor besteldetails aanzetten (vet en dubbele hoogte)
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
-
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x06')  # Bold aan
 
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
@@ -565,8 +564,8 @@ info@pitapizzanapoli.be
                     if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            # Tussen items geen streepjeslijn meer; gebruik enkel een lege regel
-                            win32print.WritePrinter(hprinter, b'\n')
+                            # Tussen items streepjeslijn i.p.v. lege regel
+                            win32print.WritePrinter(hprinter, ('-' * 28 + '\n').encode('cp858'))
                             current_item_lines = []
                         current_item_lines.append(line.replace('?', '€'))
                     else:
@@ -585,7 +584,7 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
                 # Exact één volledige scheidingslijn aan het einde van de besteldetails
-                win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
+                win32print.WritePrinter(hprinter, ('\n' + '-' * 14 + '\n').encode('cp858'))
 
             # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
@@ -1526,7 +1525,7 @@ def setup_menu_interface():
 
     # ========== LINKERKANT ==========
     menu_selection_frame = tk.Frame(menu_main_panel)
-    menu_main_panel.add(menu_selection_frame, minsize=1100)
+    menu_main_panel.add(menu_selection_frame, minsize=1150)
 
     preferred_order = app_settings.get("category_order", [])
 

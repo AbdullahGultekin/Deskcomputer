@@ -98,7 +98,7 @@ def open_koeriers(root):
 
     # ===================== RECHTERZIJDE: KOERIERS + AFREKENING =====================
     right = tk.Frame(paned, padx=10, pady=10)
-    paned.add(right, minsize=1000)
+    paned.add(right, minsize=1100)
 
     tk.Label(right, text="Koeriers", font=("Arial", 13, "bold")).pack(anchor="w")
 
