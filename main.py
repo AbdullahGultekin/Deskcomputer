@@ -538,10 +538,10 @@ info@pitapizzanapoli.be
             win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
             # Bestel-details
-            win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # CP858
-            if details_idx > 0:
+            win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # CP858 #euroteken
+            if details_idx > 0: # Alleen doorgaan als we de sectie “Details bestelling” hebben gevonden.
                 # bereken einde van details sectie
-                details_end_idx = len(bon_lines)
+                details_end_idx = len(bon_lines) # Zoekt het einde van de details-sectie tot aan “Tarief” of een “Totaal”-regel (met extra veiligheidsmarge i > details_idx + 2).
                 for i in range(details_idx, len(bon_lines)):
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
@@ -549,14 +549,17 @@ info@pitapizzanapoli.be
 
                 # "Details bestelling" vet
                 ESC = b'\x1b'
+                GS = b'\x1d'
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                 win32print.WritePrinter(hprinter, 'Details bestelling\n'.encode('cp858'))
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
-                # Enkel een lege regel na de titel, geen streepjeslijn
                 win32print.WritePrinter(hprinter, b'\n')
 
-                # Stijl voor besteldetails aanzetten (vet en dubbele hoogte)
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x06')  # Bold aan
+                # Zet expliciet links uitlijnen en normale grootte voor consistente breedte
+                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normaal
+                # Eventueel bold aan voor items (optioneel)
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
 
                 current_item_lines = []
                 for line in bon_lines[details_idx + 1:details_end_idx]:
@@ -564,7 +567,9 @@ info@pitapizzanapoli.be
                     if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            # Tussen items streepjeslijn i.p.v. lege regel
+                            # Zorg dat scheidingslijn onder normale grootte en links uitlijning valt
+                            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
+                            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
                             win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
                             current_item_lines = []
                         current_item_lines.append(line.replace('?', '€'))
@@ -576,16 +581,14 @@ info@pitapizzanapoli.be
 
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                    # Na laatste item: geen extra lege regel hier; we plaatsen straks één duidelijke scheidingslijn
-                    pass
 
-                # Reset de stijl na de besteldetails
+                # Reset stijl na details
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
+                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links
 
-                # Exact één volledige scheidingslijn aan het einde van de besteldetails
+                # Exact één volledige scheidingslijn op standaardbreedte
                 win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
-
             # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
                 sep_line = "-" * 42
