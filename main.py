@@ -565,7 +565,7 @@ info@pitapizzanapoli.be
                         if current_item_lines:
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
                             # Tussen items streepjeslijn i.p.v. lege regel
-                            win32print.WritePrinter(hprinter, ('-' * 28 + '\n').encode('cp858'))
+                            win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
                             current_item_lines = []
                         current_item_lines.append(line.replace('?', '€'))
                     else:
@@ -584,7 +584,7 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
                 # Exact één volledige scheidingslijn aan het einde van de besteldetails
-                win32print.WritePrinter(hprinter, ('\n' + '-' * 14 + '\n').encode('cp858'))
+                win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
 
             # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
