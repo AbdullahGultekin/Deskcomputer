@@ -539,15 +539,16 @@ info@pitapizzanapoli.be
 
             # Bestel-details
             win32print.WritePrinter(hprinter, b'\x1B\x74\x13')  # CP858 #euroteken
-            if details_idx > 0: # Alleen doorgaan als we de sectie “Details bestelling” hebben gevonden.
+            if details_idx > 0:  # Alleen doorgaan als we de sectie "Details bestelling" hebben gevonden.
                 # bereken einde van details sectie
-                details_end_idx = len(bon_lines) # Zoekt het einde van de details-sectie tot aan “Tarief” of een “Totaal”-regel (met extra veiligheidsmarge i > details_idx + 2).
+                details_end_idx = len(
+                    bon_lines)  # Zoekt het einde van de details-sectie tot aan "Tarief" of een "Totaal"-regel (met extra veiligheidsmarge i > details_idx + 2).
                 for i in range(details_idx, len(bon_lines)):
                     if 'Tarief' in bon_lines[i] or ('Totaal' in bon_lines[i] and i > details_idx + 2):
                         details_end_idx = i
                         break
 
-                # "Details bestelling" vet
+                # "Details bestelling" vet maar NORMALE grootte
                 ESC = b'\x1b'
                 GS = b'\x1d'
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
@@ -555,23 +556,31 @@ info@pitapizzanapoli.be
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                 win32print.WritePrinter(hprinter, b'\n')
 
-                # Zet expliciet links uitlijnen en normale grootte voor consistente breedte
-                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normaal
-                # Eventueel bold aan voor items (optioneel)
+                # Items GROTER maken (zoals adres) - dubbele hoogte + breedte
+                win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links uitlijnen
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte EN breedte
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
 
                 current_item_lines = []
+                first_item = True
                 for line in bon_lines[details_idx + 1:details_end_idx]:
                     stripped_line = line.strip()
                     if stripped_line and (stripped_line[0].isdigit() and 'x' in line[:5]):
                         if current_item_lines:
+                            # Print vorige item
                             win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
-                            # Zorg dat scheidingslijn onder normale grootte en links uitlijning valt
-                            win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')
-                            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')
+                            win32print.WritePrinter(hprinter, b'\n')
+                            # Reset tijdelijk voor scheidingslijn
+                            win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
+                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                             win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
+                            # Weer groot maken voor volgende item
+                            win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Groot
+                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
                             current_item_lines = []
+                        elif first_item:
+                            # Bij eerste item: geen scheidingslijn voor het item
+                            first_item = False
                         current_item_lines.append(line.replace('?', '€'))
                     else:
                         if "TE BETALEN" in line:
@@ -581,14 +590,12 @@ info@pitapizzanapoli.be
 
                 if current_item_lines:
                     win32print.WritePrinter(hprinter, '\n'.join(current_item_lines).encode('cp858'))
+                    win32print.WritePrinter(hprinter, b'\n')
 
-                # Reset stijl na details
+                # Reset stijl na details (terug naar normaal)
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x00')  # Normale grootte
                 win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links
-
-                # Exact één volledige scheidingslijn op standaardbreedte
-                win32print.WritePrinter(hprinter, ('\n' + '-' * 42 + '\n').encode('cp858'))
             # ==== HIER: Tarief-sectie printen ====
                 tarief_start = -1
                 sep_line = "-" * 42
@@ -596,7 +603,7 @@ info@pitapizzanapoli.be
                     line = bon_lines[i]
                     if ("Tarief" in line and "Basis" in line and "BTW" in line and "Totaal" in line):
                         # neem scheidingslijn erboven mee als die exact '----------...'
-                        tarief_start = i - 1 if i > 0 and bon_lines[i - 1].strip() == sep_line else i
+
                         break
 
                 if tarief_start >= 0:

@@ -181,6 +181,19 @@ def open_voorraad(root):
             ))
         conn.close()
 
+    # Add this function in your voorraad.py file, likely near other recipe-related functions
+
+    def nieuwe_receptregel():
+        """Voegt een nieuwe receptregel/koppeling toe"""
+        # This function should open a dialog or add a row to link ingredients to menu items
+        # Example implementation:
+        try:
+            # Add your logic here to create a new recipe ingredient link
+            # For example, opening a dialog to select product and ingredient
+            messagebox.showinfo("Info", "Koppeling toevoegen functionaliteit nog te implementeren")
+        except Exception as e:
+            messagebox.showerror("Fout", f"Kon receptregel niet toevoegen: {e}")
+
     def verwijder_receptregel():
         sel = rec_tree.selection()
         if not sel:
