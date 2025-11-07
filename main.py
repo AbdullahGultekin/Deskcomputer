@@ -559,7 +559,7 @@ info@pitapizzanapoli.be
                 # Items GROTER maken (zoals adres) - dubbele hoogte + breedte
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links uitlijnen
                 win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte EN breedte
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold aan
 
                 current_item_lines = []
                 first_item = True
@@ -576,7 +576,7 @@ info@pitapizzanapoli.be
                             win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
                             # Weer groot maken voor volgende item
                             win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Groot
-                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x01')  # Bold aan
+                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold aan
                             current_item_lines = []
                         elif first_item:
                             # Bij eerste item: geen scheidingslijn voor het item
@@ -603,7 +603,7 @@ info@pitapizzanapoli.be
                     line = bon_lines[i]
                     if ("Tarief" in line and "Basis" in line and "BTW" in line and "Totaal" in line):
                         # neem scheidingslijn erboven mee als die exact '----------...'
-
+                        tarief_start = i
                         break
 
                 if tarief_start >= 0:

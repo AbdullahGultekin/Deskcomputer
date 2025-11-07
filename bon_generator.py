@@ -20,7 +20,7 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
     """
     Genereert bontekst exact zoals de gewenste layout.
     """
-    BON_WIDTH = 42
+    BON_WIDTH = 46
 
     totaal = sum(Decimal(str(item['prijs'])) * item['aantal'] for item in bestelregels)
 
