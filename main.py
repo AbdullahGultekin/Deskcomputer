@@ -558,8 +558,8 @@ info@pitapizzanapoli.be
 
                 # Items GROTER maken (zoals adres) - dubbele hoogte + breedte
                 win32print.WritePrinter(hprinter, ESC + b'a' + b'\x00')  # Links uitlijnen
-                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte EN breedte
-                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold aan
+                win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Dubbele hoogte
+                win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
 
                 current_item_lines = []
                 first_item = True
@@ -576,7 +576,7 @@ info@pitapizzanapoli.be
                             win32print.WritePrinter(hprinter, ('-' * 42 + '\n').encode('cp858'))
                             # Weer groot maken voor volgende item
                             win32print.WritePrinter(hprinter, GS + b'!' + b'\x01')  # Groot
-                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold aan
+                            win32print.WritePrinter(hprinter, ESC + b'E' + b'\x00')  # Bold uit
                             current_item_lines = []
                         elif first_item:
                             # Bij eerste item: geen scheidingslijn voor het item

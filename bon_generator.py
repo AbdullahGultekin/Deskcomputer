@@ -52,7 +52,7 @@ def generate_bon_text(klant, bestelregels, bonnummer, menu_data_for_drinks=None,
         return f"{label_part}{' ' * filler_space}{value_part}"
 
     info_lines = [
-        format_line("Soort bestelling", "Online"),
+        format_line("Soort bestelling", "Tel"),
         format_line("Bonnummer", bonnummer),
         format_line("Datum", nu.strftime('%d-%m-%Y')),
         format_line("Tijd", nu.strftime('%H:%M')),

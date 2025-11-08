@@ -9,7 +9,6 @@ def open_koeriers(root):
     KM_TARIEF = 0.25
     UUR_TARIEF = 10.0
 
-    # EMBED in tab i.p.v. Toplevel
     win = root
     for w in win.winfo_children():
         w.destroy()
@@ -19,14 +18,12 @@ def open_koeriers(root):
 
     # --- Data ophalen ---
     conn = database.get_db_connection()
-    koeriers_data = {row['naam']: row['id'] for row in
-                     conn.execute("SELECT id, naam FROM koeriers ORDER BY naam").fetchall()}
-    conn.close()
+    koeriers_data = {row['naam']: row['id'] for row in conn.execute("SELECT id, naam FROM koeriers ORDER BY naam").fetchall()}
     koeriers = list(koeriers_data.keys())
+    conn.close()
 
-    # ===================== LINKERZIJDE: BESTELLINGEN =====================
     left = tk.Frame(paned, padx=10, pady=10)
-    paned.add(left, minsize=350)
+    paned.add(left, minsize=400)
 
     # Filterbalk
     filter_frame = tk.Frame(left)
@@ -37,8 +34,7 @@ def open_koeriers(root):
     search_entry.pack(side=tk.LEFT, padx=(6, 12))
     tk.Label(filter_frame, text="Koerier:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
     filter_koerier_var = tk.StringVar(value="Alle")
-    koerier_opt = ttk.Combobox(filter_frame, state="readonly",
-                               values=["Alle"] + koeriers, textvariable=filter_koerier_var, width=12)
+    koerier_opt = ttk.Combobox(filter_frame, state="readonly", values=["Alle"] + koeriers, textvariable=filter_koerier_var, width=12)
     koerier_opt.pack(side=tk.LEFT, padx=(6, 12))
     tk.Label(filter_frame, text="Datum:", font=("Arial", 10, "bold")).pack(side=tk.LEFT)
     datum_var = tk.StringVar(value=datetime.date.today().strftime('%Y-%m-%d'))
@@ -46,7 +42,7 @@ def open_koeriers(root):
     datum_entry.pack(side=tk.LEFT, padx=(6, 12))
     tk.Button(filter_frame, text="Herlaad", command=lambda: laad_bestellingen(True), bg="#E1E1FF").pack(side=tk.LEFT)
 
-    # Tabel met zebra-styling en duidelijke kolommen
+    # Tabel
     cols = ("tijd", "adres", "nr", "gemeente", "tel", "totaal", "koerier")
     headers = {
         "tijd": "Tijd",
@@ -61,32 +57,80 @@ def open_koeriers(root):
     tree = ttk.Treeview(left, columns=cols, show="headings", height=18)
     for c in cols:
         tree.heading(c, text=headers[c])
-        tree.column(c, width=widths[c],
-                    anchor="w" if c not in ("totaal", "tijd") else ("center" if c == "tijd" else "e"))
+        tree.column(c, width=widths[c], anchor="w" if c not in ("totaal", "tijd") else ("center" if c == "tijd" else "e"))
+
     scroll_y = ttk.Scrollbar(left, orient=tk.VERTICAL, command=tree.yview)
     tree.configure(yscrollcommand=scroll_y.set)
     tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scroll_y.pack(side=tk.LEFT, fill=tk.Y)
 
-    # Style: zebra en kleurcode als geen koerier toegewezen
+    # --- Styles ---
     style = ttk.Style(tree)
     style.map("Treeview")
-    tree.tag_configure("row_a", background="#FAFAFA")
-    tree.tag_configure("row_b", background="#F0F4FF")
-    tree.tag_configure("unassigned", background="#FFF3CD")  # geel highlight
+    tree.tag_configure("row_a", background="#E6EBFF")      # zebra lichtblauw
+    tree.tag_configure("row_b", background="#FFFFFF")      # zebra wit
+    tree.tag_configure("unassigned", background="#FFEB99") # geel
 
-    # Nieuw: kleur per koerier in de lijst (matcht rechter kaarten)
-    KOERIER_ROW_COLORS = {
-        # vul dynamisch in na het ophalen van koeriers
-    }
+    # Dynamische kleur per koerier
+    CARD_COLORS = [
+        "#E3F2FD", "#FFF3CD", "#E8F5E9", "#F3E5F5",
+        "#FFEDE7", "#EDE7F6", "#E0F7FA", "#FFF8E1"
+    ]
+    KOERIER_ROW_COLORS = {naam: CARD_COLORS[i % len(CARD_COLORS)] for i, naam in enumerate(koeriers)}
 
-    # Actiebalk onder tabel
+    # --- Bestellingen vullen uit database (géén data!) ---
+    def laad_bestellingen(force=False):
+        for i in tree.get_children():
+            tree.delete(i)
+        datum = datum_var.get() or datetime.date.today().strftime('%Y-%m-%d')
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        query = """
+            SELECT b.id, b.totaal, b.tijd, k.straat, k.huisnummer, k.plaats, k.telefoon, ko.naam AS koerier_naam
+            FROM bestellingen b
+            JOIN klanten k ON b.klant_id = k.id
+            LEFT JOIN koeriers ko ON b.koerier_id = ko.id
+            WHERE b.datum = ?
+            ORDER BY b.tijd
+        """
+        cursor.execute(query, (datum,))
+        rows = cursor.fetchall()
+        conn.close()
+
+        for idx, bestelling in enumerate(rows):
+            gemeente = bestelling['plaats']
+            koerier_naam = bestelling['koerier_naam'] or ""
+            base_tag = "row_a" if idx % 2 == 0 else "row_b"
+            if koerier_naam:
+                kg = f"koerier_{koerier_naam.replace(' ', '_')}"
+                if not style.lookup(kg, "background"):
+                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#E3F2FD"), foreground="#000000")
+                tags = (kg,)
+            else:
+                tags = (base_tag, "unassigned")
+            koerier_cell = koerier_naam if koerier_naam else "(geen)"
+            tree.insert(
+                "", "end", iid=bestelling['id'],
+                values=(
+                    bestelling['tijd'],
+                    bestelling['straat'],
+                    bestelling['huisnummer'],
+                    gemeente,
+                    bestelling['telefoon'],
+                    f"{bestelling['totaal']:.2f}",
+                    koerier_cell
+                ),
+                tags=tags
+            )
+
+    # --- Live filters ---
+    search_var.trace_add("write", lambda *_: laad_bestellingen())
+    filter_koerier_var.trace_add("write", lambda *_: laad_bestellingen())
+    datum_var.trace_add("write", lambda *_: laad_bestellingen())
+
+    # --- Selectielabel ---
     btns = tk.Frame(left)
     btns.pack(fill=tk.X, pady=(8, 0))
-    tk.Button(btns, text="Toewijzing verwijderen", command=lambda: verwijder_toewijzing(), bg="#FFD1D1").pack(
-        side=tk.LEFT)
-    tk.Button(btns, text="Selectie -> Koerier", command=lambda: open_toewijs_popup(), bg="#D1FFD1").pack(side=tk.LEFT,
-                                                                                                         padx=8)
     geselecteerd_lbl = tk.Label(btns, text="Geen selectie", fg="#666")
     geselecteerd_lbl.pack(side=tk.RIGHT)
 
@@ -96,6 +140,9 @@ def open_koeriers(root):
 
     tree.bind("<<TreeviewSelect>>", update_geselecteerd_lbl)
 
+
+
+
     # ===================== RECHTERZIJDE: KOERIERS + AFREKENING =====================
     right = tk.Frame(paned, padx=10, pady=10)
     paned.add(right, minsize=1100)
@@ -103,16 +150,19 @@ def open_koeriers(root):
     tk.Label(right, text="Koeriers", font=("Arial", 13, "bold")).pack(anchor="w")
 
     # Palet met vaste, onderscheidende kleuren
+    KOERIER_ROW_COLORS = {}
     CARD_COLORS = [
-        ("#FFF3CD", "#7A5E00"),  # licht geel / donker tekst
-        ("#E3F2FD", "#0D47A1"),  # licht blauw
-        ("#E8F5E9", "#1B5E20"),  # licht groen
-        ("#F3E5F5", "#4A148C"),  # licht paars
-        ("#FFEDE7", "#BF360C"),  # licht oranje
-        ("#EDE7F6", "#283593"),  # indigo
-        ("#E0F7FA", "#006064"),  # cyaan
-        ("#FFF8E1", "#8D6E63"),  # crème/bruin
+        ("#FFF3CD", "#7A5E00"),
+        ("#E3F2FD", "#0D47A1"),
+        ("#E8F5E9", "#1B5E20"),
+        ("#F3E5F5", "#4A148C"),
+        ("#FFEDE7", "#BF360C"),
+        ("#EDE7F6", "#283593"),
+        ("#E0F7FA", "#006064"),
+        ("#FFF8E1", "#8D6E63"),
     ]
+    for i, naam in enumerate(koeriers):
+        KOERIER_ROW_COLORS[naam] = CARD_COLORS[i % len(CARD_COLORS)][0]
 
     # Koerier-kaarten
     koerier_cards = tk.Frame(right)
@@ -364,12 +414,10 @@ def open_koeriers(root):
         totaal_betaald_var.set(round(totaal, 2))
 
     def apply_filters(row):
-        # Tekstfilter: tijd/adres/gemeente/tel
         tekst = search_var.get().lower().strip()
-        if tekst:
-            if not any(tekst in str(v).lower() for v in (row['tijd'], row['straat'], row['plaats'], row['telefoon'])):
-                return False
-        # Koerier filter
+        if tekst and not any(
+                tekst in str(v).lower() for v in (row['tijd'], row['straat'], row['plaats'], row['telefoon'])):
+            return False
         f = filter_koerier_var.get()
         if f and f != "Alle":
             if (row.get('koerier_naam') or "") != f:
@@ -406,37 +454,36 @@ def open_koeriers(root):
             tree.heading(c, text=headers[c].upper())
 
         # Voeg rijen toe met tags (zebra, unassigned en koerierkleur)
-        for idx, bestelling in enumerate(rows):
-            if not apply_filters(bestelling) and not force:
-                continue
-            gemeente = ' '.join(bestelling['plaats'].split()[1:]) if ' ' in bestelling['plaats'] else bestelling[
-                'plaats']
-
-            koerier_naam = bestelling['koerier_naam'] or ""
-            if koerier_naam:
-                kg = f"koerier_{koerier_naam.replace(' ', '_')}"
-                if not style.lookup(kg, "background"):
-                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#FFFFFF"),
-                                       foreground="#000000")
-                tags = (kg,)
-            else:
-                # Alleen zebra kleur als geen koerier
+            for idx, bestelling in enumerate(rows):
+                if not apply_filters(bestelling) and not force:
+                    continue
+                gemeente = ' '.join(bestelling['plaats'].split()[1:]) if ' ' in bestelling['plaats'] else bestelling[
+                    'plaats']
+                koerier_naam = bestelling['koerier_naam'] or ""
                 base_tag = "row_a" if idx % 2 == 0 else "row_b"
-                tags = ("unassigned", base_tag)
 
-            koerier_cell = koerier_naam if koerier_naam else "(geen)"
+                if koerier_naam:
+                    kg = f"koerier_{koerier_naam.replace(' ', '_')}"
+                    if not style.lookup(kg, "background"):
+                        tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#FFFFFF"),
+                                           foreground="#000000")
+                    tags = (kg,)
+                else:
+                    tags = (base_tag, "unassigned")
 
-            tree.insert(
-                "", tk.END, iid=bestelling['id'],
-                values=(
-                    bestelling['tijd'],
-                    bestelling['straat'],
-                    bestelling['huisnummer'],
-                    gemeente,
-                    bestelling['telefoon'],
-                    f"{bestelling['totaal']:.2f}",
-                    koerier_cell
-                ),
+                koerier_cell = koerier_naam if koerier_naam else "(geen)"
+
+                tree.insert(
+                    "", tk.END, iid=bestelling['id'],
+                    values=(
+                        bestelling['tijd'],
+                        bestelling['straat'],
+                        bestelling['huisnummer'],
+                        gemeente,
+                        bestelling['telefoon'],
+                        f"{bestelling['totaal']:.2f}",
+                        koerier_cell
+                    ),
                 tags=tags
             )
 
