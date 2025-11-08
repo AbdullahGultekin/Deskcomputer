@@ -1785,13 +1785,13 @@ tel_adres_frame = tk.Frame(klant_frame, bg="#E1FFE1")
 tel_adres_frame.pack(fill=tk.X)
 
 tk.Label(tel_adres_frame, text="Telefoon:", bg="#E1FFE1", fg="#215468").grid(row=0, column=0, sticky="w", padx=(0, 5))
-telefoon_entry = tk.Entry(tel_adres_frame, width=15, bg="#F9F9FF")
+telefoon_entry = tk.Entry(tel_adres_frame, width=20, bg="#F9F9FF")
 telefoon_entry.grid(row=0, column=1, sticky="w")
 telefoon_entry.bind("<Return>", lambda e: vul_klantgegevens_automatisch())
 telefoon_entry.bind("<FocusOut>", lambda e: vul_klantgegevens_automatisch())
 
 tk.Label(tel_adres_frame, text="Naam:", bg="#E1FFE1", fg="#215468").grid(row=0, column=2, sticky="w", padx=(0, 5))
-naam_entry = tk.Entry(tel_adres_frame, width=17, bg="#FFFDE1")
+naam_entry = tk.Entry(tel_adres_frame, width=20, bg="#FFFDE1")
 naam_entry.grid(row=0, column=3, sticky="w", padx=(0, 10))
 
 tk.Button(
@@ -1802,7 +1802,7 @@ tk.Button(
 ).grid(row=0, column=4, sticky="w", padx=(2, 15))
 
 tk.Label(tel_adres_frame, text="Adres:", bg="#E1FFE1", fg="#215468").grid(row=0, column=5, sticky="w", padx=(0, 5))
-adres_entry = tk.Entry(tel_adres_frame, width=25, bg="#F9F9FF")
+adres_entry = tk.Entry(tel_adres_frame, width=30, bg="#F9F9FF")
 adres_entry.grid(row=0, column=6, sticky="w", padx=(0, 15))
 adres_entry.bind("<KeyRelease>", on_adres_entry)
 
@@ -1812,7 +1812,7 @@ lb_suggesties.bind("<<ListboxSelect>>", selectie_suggestie)
 lb_suggesties.grid_remove()
 
 tk.Label(tel_adres_frame, text="Nr:", bg="#E1FFE1", fg="#215468").grid(row=0, column=7, sticky="w", padx=(0, 5))
-nr_entry = tk.Entry(tel_adres_frame, width=5, bg="#F9F9FF")
+nr_entry = tk.Entry(tel_adres_frame, width=15, bg="#F9F9FF")
 nr_entry.grid(row=0, column=8, sticky="w")
 
 postcode_opmerking_frame = tk.Frame(klant_frame, bg="#E1FFE1")
