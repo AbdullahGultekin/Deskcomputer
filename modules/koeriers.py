@@ -382,9 +382,11 @@ def open_koeriers(root):
         return True
 
     def laad_bestellingen(force=False):
+        # Verwijder alle rijen uit Treeview
         for i in tree.get_children():
             tree.delete(i)
-        datum = (datum_var.get() or datetime.date.today().strftime('%Y-%m-%d'))
+
+        datum = datum_var.get() or datetime.date.today().strftime('%Y-%m-%d')
         conn = database.get_db_connection()
         cursor = conn.cursor()
         query = """
@@ -395,7 +397,7 @@ def open_koeriers(root):
                        k.huisnummer, \
                        k.plaats, \
                        k.telefoon, \
-                       ko.naam as koerier_naam
+                       ko.naam AS koerier_naam
                 FROM bestellingen b
                          JOIN klanten k ON b.klant_id = k.id
                          LEFT JOIN koeriers ko ON b.koerier_id = ko.id
@@ -406,51 +408,49 @@ def open_koeriers(root):
         rows = cursor.fetchall()
         conn.close()
 
-        # Headereffect (kleine caps) – visueel
+        # Zorg dat headers altijd in hoofdletters staan
         for c in cols:
             tree.heading(c, text=headers[c].upper())
 
-        # Voeg rijen toe met tags (zebra, unassigned en koerierkleur)
-            for idx, bestelling in enumerate(rows):
-                if not apply_filters(bestelling) and not force:
-                    continue
-                gemeente = ' '.join(bestelling['plaats'].split()[1:]) if ' ' in bestelling['plaats'] else bestelling[
-                    'plaats']
-                koerier_naam = bestelling['koerier_naam'] or ""
-                base_tag = "row_a" if idx % 2 == 0 else "row_b"
+        # Voeg rijen toe (let op: inspringing moet correct!)
+        for idx, bestelling in enumerate(rows):
+            if not apply_filters(bestelling) and not force:
+                continue
+            gemeente = bestelling['plaats']
+            koerier_naam = bestelling['koerier_naam'] or ""
+            base_tag = "row_a" if idx % 2 == 0 else "row_b"
 
-                if koerier_naam:
-                    kg = f"koerier_{koerier_naam.replace(' ', '_')}"
-                    if not style.lookup(kg, "background"):
-                        tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#FFFFFF"),
-                                           foreground="#000000")
-                    tags = (kg,)
-                else:
-                    tags = (base_tag, "unassigned")
+            if koerier_naam:
+                kg = f"koerier_{koerier_naam.replace(' ', '_')}"
+                if not style.lookup(kg, "background"):
+                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#FFFFFF"),
+                                       foreground="#000000")
+                tags = (kg,)
+            else:
+                tags = (base_tag, "unassigned")
+            koerier_cell = koerier_naam if koerier_naam else "(geen)"
 
-                koerier_cell = koerier_naam if koerier_naam else "(geen)"
-
-                tree.insert(
-                    "", tk.END, iid=bestelling['id'],
-                    values=(
-                        bestelling['tijd'],
-                        bestelling['straat'],
-                        bestelling['huisnummer'],
-                        gemeente,
-                        bestelling['telefoon'],
-                        f"{bestelling['totaal']:.2f}",
-                        koerier_cell
-                    ),
+            tree.insert(
+                "", tk.END, iid=bestelling['id'],
+                values=(
+                    bestelling['tijd'],
+                    bestelling['straat'],
+                    bestelling['huisnummer'],
+                    gemeente,
+                    bestelling['telefoon'],
+                    f"{bestelling['totaal']:.2f}",
+                    koerier_cell
+                ),
                 tags=tags
             )
 
-        # Hover/selection highlight
+        # Hover/selection highlight (optioneel)
         style.configure("Treeview", rowheight=24)
         style.map("Treeview", background=[('selected', '#B3E5FC')], foreground=[('selected', '#0D47A1')])
 
+        # Zorg dat subtotaal/afrekeningen altijd worden herberekend na laden!
         herbereken_koeriers()
         herbereken_totaal_betaald()
-
 
     def verwijder_toewijzing():
         sel = tree.selection()
