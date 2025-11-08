@@ -78,50 +78,7 @@ def open_koeriers(root):
     ]
     KOERIER_ROW_COLORS = {naam: CARD_COLORS[i % len(CARD_COLORS)] for i, naam in enumerate(koeriers)}
 
-    # --- Bestellingen vullen uit database (géén data!) ---
-    def laad_bestellingen(force=False):
-        for i in tree.get_children():
-            tree.delete(i)
-        datum = datum_var.get() or datetime.date.today().strftime('%Y-%m-%d')
-        conn = database.get_db_connection()
-        cursor = conn.cursor()
-        query = """
-            SELECT b.id, b.totaal, b.tijd, k.straat, k.huisnummer, k.plaats, k.telefoon, ko.naam AS koerier_naam
-            FROM bestellingen b
-            JOIN klanten k ON b.klant_id = k.id
-            LEFT JOIN koeriers ko ON b.koerier_id = ko.id
-            WHERE b.datum = ?
-            ORDER BY b.tijd
-        """
-        cursor.execute(query, (datum,))
-        rows = cursor.fetchall()
-        conn.close()
 
-        for idx, bestelling in enumerate(rows):
-            gemeente = bestelling['plaats']
-            koerier_naam = bestelling['koerier_naam'] or ""
-            base_tag = "row_a" if idx % 2 == 0 else "row_b"
-            if koerier_naam:
-                kg = f"koerier_{koerier_naam.replace(' ', '_')}"
-                if not style.lookup(kg, "background"):
-                    tree.tag_configure(kg, background=KOERIER_ROW_COLORS.get(koerier_naam, "#E3F2FD"), foreground="#000000")
-                tags = (kg,)
-            else:
-                tags = (base_tag, "unassigned")
-            koerier_cell = koerier_naam if koerier_naam else "(geen)"
-            tree.insert(
-                "", "end", iid=bestelling['id'],
-                values=(
-                    bestelling['tijd'],
-                    bestelling['straat'],
-                    bestelling['huisnummer'],
-                    gemeente,
-                    bestelling['telefoon'],
-                    f"{bestelling['totaal']:.2f}",
-                    koerier_cell
-                ),
-                tags=tags
-            )
 
     # --- Live filters ---
     search_var.trace_add("write", lambda *_: laad_bestellingen())
